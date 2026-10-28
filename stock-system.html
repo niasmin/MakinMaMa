@@ -58,6 +58,24 @@ td input{width:90px;padding:6px 8px}
 .item-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;flex-wrap:wrap}
 .item-row:first-of-type{border-top:none}
 .item-row .nm{flex:1;min-width:140px;font-weight:600}
+.code{font-family:'Kanit';font-size:11.5px;color:var(--soft);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.rep{min-width:1350px}
+.rep th,.rep td{padding:6px 8px;font-size:12.5px}
+main.wide{max-width:1500px}
+.rep th{text-align:center;white-space:normal;vertical-align:bottom;line-height:1.3}
+.rep tr.cat td{background:var(--gold-s);font-family:'Kanit';font-weight:600;color:var(--gold)}
+.rep tr.tot td{font-family:'Kanit';font-weight:700;border-top:2px solid var(--red-s)}
+.rep td.buy{color:var(--green)}
+.warn-c{color:var(--red);font-weight:600}
+@media print{
+  header,nav,.noprint,.toast{display:none!important}
+  body{background:#fff}
+  main{max-width:none;padding:0}
+  .card{border:none;padding:0}
+  .scroll{overflow:visible}
+  .rep th,.rep td{font-size:10px;padding:3px 4px;border:1px solid #ccc}
+  @page{size:A4 landscape;margin:8mm}
+}
 </style>
 </head>
 <body>
@@ -82,6 +100,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;'
 const fmt=(n,d=2)=>Number(n||0).toLocaleString('th-TH',{maximumFractionDigits:d});
 const baht=n=>'฿'+fmt(n,2);
 const r4=n=>Math.round(n*10000)/10000;
+const r2=n=>Math.round(n*100)/100;
 const dt=iso=>new Date(iso).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 const dd=iso=>new Date(iso).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
@@ -89,6 +108,7 @@ const TL={in:'รับเข้า',out:'เบิกใช้',waste:'ขอ�
 
 const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),sync:{state:'off',pending:0,error:''},last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in'};
 
+const SEED_CAT=n=>/มาม่า/.test(n)?['เส้น/มาม่า','ชั้นของแห้ง']:/ไข่|ผัก|เต้าหู้/.test(n)?['วัตถุดิบสด','ตู้เย็น']:/เนื้อ|ไก่|หมึก|กุ้ง|ปูอัด|ลูกชิ้น|ไส้กรอก|โบโลน่า|แฮม|ชีส|นักเกต|เฟรนช์/.test(n)?['เนื้อสัตว์/ของแช่แข็ง','ตู้แช่แข็ง']:/ซอส|สาหร่าย/.test(n)?['ซอส/เครื่องปรุง','ชั้นของแห้ง']:/น้ำ|ไอศกรีม/.test(n)?['เครื่องดื่ม/ของหวาน','ตู้เย็น']:['อื่นๆ','ชั้นของแห้ง'];
 const SEED=[['มาม่าไทย','ซอง'],['มาม่าบิ๊กแพ็ค','ซอง'],['มาม่าเกาหลี','ซอง'],['ไข่ไก่','ฟอง'],['ผักสด','ชุด'],['ลูกชิ้นไก่','ลูก'],['ลูกชิ้นปลา','ลูก'],['ลูกชิ้นเนื้อ','ลูก'],['ไส้กรอกหนังกรอบ','ชิ้น'],['เต้าหู้','ชิ้น'],['เนื้อวัว','กรัม'],['ไก่สับ','กรัม'],['สาหร่ายวากาเมะ','ห่อ'],['โบโลน่า','ชิ้น'],['แฮมไก่','ชิ้น'],['ปูอัด','ชิ้น'],['ชีสแผ่น','แผ่น'],['ไก่ฉีก','กรัม'],['หนังไก่กรอบ','ชิ้น'],['ปลาหมึก','กรัม'],['กุ้ง','ตัว'],['นักเกต','ชิ้น'],['ชีสบอล','ชิ้น'],['เฟรนช์ฟราย','กรัม'],['ไก่ป๊อป','ชิ้น'],['ไก่ไร้กระดูก','ชิ้น'],['ซอสเกาหลี','มล.'],['ซอสเทอริยากิ','มล.'],['ข้าวสวย','ถ้วย'],['ไอศกรีมเนสเล่','ถ้วย'],['น้ำดื่ม','ขวด'],['น้ำแข็ง','กก.']];
 
 /* ---- data layer: เก็บใน localStorage เสมอ ถ้าต่อ Supabase จะเขียนขึ้นรายรายการด้วย (กันเขียนทับกันระหว่างอุปกรณ์) ---- */
@@ -167,7 +187,7 @@ function sumTable(sm){
 }
 
 /* ================= views ================= */
-const TABS=[['dash','📊 ภาพรวม'],['items','📦 วัตถุดิบ'],['moves','🔄 รับ/เบิก'],['periods','🗓️ งวด ต้น-ปลาย'],['settings','⚙️ ตั้งค่า']];
+const TABS=[['dash','📊 ภาพรวม'],['items','📦 วัตถุดิบ'],['moves','🔄 รับ/เบิก'],['report','📋 รายงานสิ้นเดือน'],['periods','🗓️ งวด ต้น-ปลาย'],['settings','⚙️ ตั้งค่า']];
 function renderHeader(){
   const st=S.sync.state;
   $('#badge').className='badge'+(st==='online'?' on':'');
@@ -203,9 +223,11 @@ function movesTable(list){
 }
 function itemsLive(){
   if(!S.items.length) return `<div class="empty">ยังไม่มีวัตถุดิบ<br><br><button class="p" data-act="seed">เพิ่มรายการวัตถุดิบตั้งต้นของร้าน (${SEED.length} รายการ)</button></div>`;
-  return S.items.slice().sort((a,b)=>a.name.localeCompare(b.name,'th')).map(i=>`<div class="item-row"><span class="nm">${esc(i.name)}</span>
-    <span class="${i.qty<=i.low?'low':''}">${fmt(i.qty)} ${esc(i.unit)}</span><span class="note">ต้นทุนเฉลี่ย ${baht(i.avgCost)}/${esc(i.unit)}</span><span class="note">มูลค่า ${baht(i.qty*i.avgCost)}</span>
-    <button class="x" data-act="delItem" data-v="${i.id}" title="ลบ">✕</button></div>`).join('');
+  return sortedItems().map(i=>{ const ex=expState(i);
+    return `<div class="item-row"><span class="code">${esc(i.code||'-')}</span><span class="nm">${esc(i.name)}${i.brand?` <span class="note">(${esc(i.brand)})</span>`:''}<br><span class="note">${esc(i.cat||'อื่นๆ')} · ${esc(i.loc||'-')}${i.exp?` · หมดอายุ ${dd(i.exp)}`:''}</span></span>
+    <span class="${i.qty<=i.low?'low':''}">${fmt(i.qty)} ${esc(i.unit)}</span><span class="note">ขั้นต่ำ ${fmt(i.low)}${i.max?' / สูงสุด '+fmt(i.max):''}</span><span class="note">ต้นทุนเฉลี่ย ${baht(i.avgCost)}/${esc(i.unit)}</span><span class="note">มูลค่า ${baht(i.qty*i.avgCost)}</span>
+    ${ex?`<span class="warn-c">${ex}</span>`:''}
+    <button class="s" data-act="editItem" data-v="${i.id}">✏️ แก้ไข</button><button class="x" data-act="delItem" data-v="${i.id}" title="ลบ">✕</button></div>`; }).join('');
 }
 function itemOptions(){ return '<option value="">เลือกวัตถุดิบ</option>'+S.items.slice().sort((a,b)=>a.name.localeCompare(b.name,'th')).map(i=>`<option value="${i.id}">${esc(i.name)} (เหลือ ${fmt(i.qty)} ${esc(i.unit)})</option>`).join(''); }
 function movesLive(){ return movesTable(S.moves.slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,80)); }
@@ -261,8 +283,10 @@ function settingsHtml(){
 function renderTab(){
   renderHeader();
   const v=$('#view');
+  v.classList.toggle('wide',S.tab==='report');
   if(S.tab==='dash') v.innerHTML='<div id="live"></div>';
-  else if(S.tab==='items') v.innerHTML=`<div class="card"><h3>เพิ่มวัตถุดิบ</h3><div class="row"><div class="f"><label>ชื่อ</label><input id="in_name"></div><div class="f" style="max-width:110px"><label>หน่วย</label><input id="in_unit" placeholder="ซอง/กรัม"></div><div class="f" style="max-width:130px"><label>แจ้งเตือนเมื่อ ≤</label><input id="in_low" type="number" min="0" step="any" value="10"></div></div><button class="p" data-act="addItem">+ เพิ่ม</button><div class="note" style="margin-top:6px">จำนวนและต้นทุนเริ่มต้นให้ใส่ผ่านการ "รับเข้า" หรือ "นับต้นงวด"</div></div><div class="card" id="live"></div>`;
+  else if(S.tab==='items') v.innerHTML=itemFormHtml()+`<div class="card" id="live"></div>`;
+  else if(S.tab==='report') v.innerHTML=`<div id="live"></div>`;
   else if(S.tab==='moves') v.innerHTML=`<div class="card"><h3>บันทึกการเคลื่อนไหว</h3><div class="types">${['in','out','waste','adjust'].map(t=>`<button data-act="mtype" data-v="${t}" class="${S.moveType===t?'on':''}">${TL[t]}</button>`).join('')}</div>
     <div class="row"><div class="f" style="flex:2"><label>วัตถุดิบ</label><select id="mv_item">${itemOptions()}</select></div><div class="f"><label id="mv_ql">${S.moveType==='adjust'?'นับได้จริง':'จำนวน'}</label><input id="mv_qty" type="number" min="0" step="any"></div>
     ${S.moveType==='in'?'<div class="f"><label>ราคารวมที่จ่าย (฿)</label><input id="mv_cost" type="number" min="0" step="any"></div>':''}</div>
@@ -278,6 +302,7 @@ function refreshLive(force){
   if(S.tab==='dash') L.innerHTML=dashHtml();
   else if(S.tab==='items') L.innerHTML=itemsLive();
   else if(S.tab==='moves'){ L.innerHTML=movesLive(); const s=$('#mv_item'); if(s){const cur=s.value; s.innerHTML=itemOptions(); s.value=cur;} }
+  else if(S.tab==='report') L.innerHTML=reportHtml();
   else if(S.tab==='periods'){ if(S.wizard){ if(force){L.innerHTML=wizardHtml(); if(S.wizard==='close') updatePrev();} } else L.innerHTML=periodsHtml(); }
 }
 function afterChange(){ S.last=new Date(); refreshLive(); }
@@ -286,15 +311,166 @@ function afterChange(){ S.last=new Date(); refreshLive(); }
 const posn=v=>(v===''||v==null||isNaN(v))?null:Number(v);
 function needUser(){ if(S.user) return true; const n=prompt('ใส่ชื่อของคุณ (บันทึกไว้ในรายการ)'); if(n&&n.trim()){S.user=n.trim();sv('user',S.user);renderHeader();return true} toast('กรุณาใส่ชื่อผู้ใช้ก่อน'); return false; }
 
-async function addItem(){
-  const name=$('#in_name').value.trim(), unit=$('#in_unit').value.trim()||'หน่วย', low=posn($('#in_low').value);
-  if(!name) return toast('กรอกชื่อวัตถุดิบ');
-  if(S.items.some(i=>i.name===name)) return toast('มีวัตถุดิบชื่อนี้แล้ว');
-  if(low===null||low<0) return toast('ค่าแจ้งเตือนต้องไม่ติดลบ');
-  await putItem({id:uid(),name,unit,qty:0,avgCost:0,low,createdAt:new Date().toISOString()});
-  $('#in_name').value=''; $('#in_unit').value=''; toast('เพิ่มวัตถุดิบแล้ว');
+function nextCode(){ let n=0; S.items.forEach(i=>{ const m=/^MM(\d+)$/.exec(i.code||''); if(m) n=Math.max(n,+m[1]); }); return 'MM'+String(n+1).padStart(3,'0'); }
+const CAT_ORDER=['เส้น/มาม่า','วัตถุดิบสด','เนื้อสัตว์/ของแช่แข็ง','ซอส/เครื่องปรุง','เครื่องดื่ม/ของหวาน','บรรจุภัณฑ์','อื่นๆ'];
+const catRank=c=>{ const i=CAT_ORDER.indexOf(c||'อื่นๆ'); return i<0?CAT_ORDER.length-1.5:i; };
+function sortedItems(){ return S.items.slice().sort((a,b)=>catRank(a.cat)-catRank(b.cat)||(a.cat||'อื่นๆ').localeCompare(b.cat||'อื่นๆ','th')||(a.code||'~').localeCompare(b.code||'~')||a.name.localeCompare(b.name,'th')); }
+function expState(i){
+  if(!i.exp) return '';
+  const d=Math.ceil((new Date(i.exp+'T23:59:59')-new Date())/864e5);
+  return d<0?'⛔ หมดอายุแล้ว':d<=7?'⚠️ หมดอายุใน '+d+' วัน':'';
 }
-async function seed(){ for(const [n,u] of SEED){ if(!S.items.some(i=>i.name===n)) await putItem({id:uid(),name:n,unit:u,qty:0,avgCost:0,low:(u==='กรัม'||u==='มล.')?500:10,createdAt:new Date().toISOString()}); } toast('เพิ่มรายการตั้งต้นแล้ว'); }
+function itemFormHtml(){
+  const e=S.editId?S.items.find(i=>i.id===S.editId):null, v=k=>esc(e?(e[k]??''):'');
+  const cats=[...new Set(S.items.map(i=>i.cat).filter(Boolean).concat(['เส้น/มาม่า','วัตถุดิบสด','เนื้อสัตว์/ของแช่แข็ง','ซอส/เครื่องปรุง','เครื่องดื่ม/ของหวาน','บรรจุภัณฑ์','อื่นๆ']))];
+  const locs=[...new Set(S.items.map(i=>i.loc).filter(Boolean).concat(['ชั้นของแห้ง','ตู้เย็น','ตู้แช่แข็ง','หน้าร้าน']))];
+  return `<div class="card"><h3>${e?'แก้ไขวัตถุดิบ: '+esc(e.name):'เพิ่มวัตถุดิบ'}</h3>
+  <datalist id="dl_cat">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><datalist id="dl_loc">${locs.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+  <div class="row"><div class="f" style="max-width:110px"><label>รหัสสินค้า</label><input id="in_code" value="${e?v('code'):nextCode()}"></div><div class="f" style="flex:2"><label>รายการสินค้า</label><input id="in_name" value="${v('name')}"></div><div class="f"><label>ยี่ห้อ/รุ่น</label><input id="in_brand" value="${v('brand')}"></div></div>
+  <div class="row"><div class="f"><label>หมวด</label><input id="in_cat" list="dl_cat" value="${e?v('cat'):'อื่นๆ'}"></div><div class="f"><label>ที่เก็บ (คลัง)</label><input id="in_loc" list="dl_loc" value="${v('loc')}"></div><div class="f"><label>วันหมดอายุ (ล็อตปัจจุบัน)</label><input id="in_exp" type="date" value="${v('exp')}"></div></div>
+  <div class="row"><div class="f" style="max-width:110px"><label>หน่วยนับ</label><input id="in_unit" placeholder="ซอง/แพ็ค/ลัง" value="${v('unit')}"></div><div class="f" style="max-width:130px"><label>ขั้นต่ำสุด (แจ้งเตือน ≤)</label><input id="in_low" type="number" min="0" step="any" value="${e?v('low'):10}"></div><div class="f" style="max-width:130px"><label>ขั้นสูงสุด</label><input id="in_max" type="number" min="0" step="any" value="${v('max')}"></div></div>
+  <button class="p" data-act="addItem">${e?'บันทึกการแก้ไข':'+ เพิ่ม'}</button>${e?' <button class="s" data-act="cancelEdit">ยกเลิก</button>':''}
+  <div class="note" style="margin-top:6px">จำนวนและต้นทุนให้ใส่ผ่านการ "รับเข้า" หรือ "นับต้นงวด" · ขั้นสูงสุดใช้คำนวณจำนวนที่ควรสั่งในรายงานสิ้นเดือน</div></div>`;
+}
+async function addItem(){
+  const name=$('#in_name').value.trim(), unit=$('#in_unit').value.trim()||'หน่วย', low=posn($('#in_low').value), max=posn($('#in_max').value);
+  const code=$('#in_code').value.trim(), brand=$('#in_brand').value.trim(), cat=$('#in_cat').value.trim()||'อื่นๆ', loc=$('#in_loc').value.trim(), exp=$('#in_exp').value||'';
+  if(!name) return toast('กรอกชื่อวัตถุดิบ');
+  if(S.items.some(i=>i.name===name&&i.id!==S.editId)) return toast('มีวัตถุดิบชื่อนี้แล้ว');
+  if(code&&S.items.some(i=>i.code===code&&i.id!==S.editId)) return toast('รหัสสินค้านี้ถูกใช้แล้ว');
+  if(low===null||low<0) return toast('ขั้นต่ำต้องไม่ติดลบ');
+  if(max!==null&&max<low) return toast('ขั้นสูงสุดต้องไม่น้อยกว่าขั้นต่ำ');
+  const fields={code,name,unit,low,max,brand,cat,loc,exp};
+  if(S.editId){
+    const it=S.items.find(i=>i.id===S.editId); if(!it){ S.editId=null; return renderTab(); }
+    putItem({...it,...fields}); S.editId=null; renderTab(); toast('บันทึกการแก้ไขแล้ว');
+  } else {
+    putItem({id:uid(),...fields,qty:0,avgCost:0,createdAt:new Date().toISOString()});
+    renderTab(); toast('เพิ่มวัตถุดิบแล้ว');
+  }
+}
+async function seed(){
+  for(const [n,u] of SEED){ if(!S.items.some(i=>i.name===n)){ const [cat,loc]=SEED_CAT(n), bulk=(u==='กรัม'||u==='มล.'); putItem({id:uid(),code:nextCode(),name:n,unit:u,qty:0,avgCost:0,low:bulk?500:10,max:bulk?5000:100,brand:'',cat,loc,exp:'',createdAt:new Date().toISOString()}); } }
+  toast('เพิ่มรายการตั้งต้นแล้ว');
+}
+
+/* ================= รายงานสิ้นเดือน (แบบใบตรวจเช็คสต๊อก) ================= */
+const TH_M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_ML=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const ymOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const ymLabel=(ym,long)=>{ const [y,m]=ym.split('-').map(Number); return long?TH_ML[m-1]+' '+(y+543):TH_M[m-1]+' '+String(y+543).slice(-2); };
+function monthRange(ym){ const [y,m]=ym.split('-').map(Number); return [new Date(y,m-1,1).toISOString(),new Date(y,m,1).toISOString()]; }
+function reportMonths(){
+  let first=new Date();
+  S.moves.forEach(m=>{ const d=new Date(m.time); if(d<first) first=d; });
+  const out=[], cur=new Date(first.getFullYear(),first.getMonth(),1), now=new Date();
+  while(cur<=now){ out.push(ymOf(cur)); cur.setMonth(cur.getMonth()+1); }
+  return out.reverse();
+}
+// ต้นทุนต่อหน่วย (ถัวเฉลี่ย) ณ เวลา T โดยไล่รายการรับ/เบิกตั้งแต่ต้น
+function costAt(it,hist,T){
+  let q=0,c=null;
+  for(const m of hist){
+    if(m.time>=T) break;
+    if(m.type==='in'){ const nq=Math.max(q,0)+m.delta; c=nq>0?((Math.max(q,0)*(c||0))+m.value)/nq:c; q=nq; }
+    else { if(m.type==='adjust'&&m.unitCost!=null) c=m.unitCost; q+=m.delta; }
+  }
+  return c==null?it.avgCost:c;
+}
+function monthReport(ym){
+  const [s,e]=monthRange(ym);
+  const rows=[];
+  sortedItems().forEach(it=>{
+    const hist=S.moves.filter(m=>m.itemId===it.id).sort((a,b)=>a.time.localeCompare(b.time));
+    if(it.createdAt&&it.createdAt>=e&&!(hist[0]&&hist[0].time<e)) return; // ยังไม่มีรายการนี้ในเดือนนั้น
+    const sum=l=>l.reduce((t,m)=>t+(m.delta||0),0);
+    const openQty=r4(it.qty-sum(hist.filter(m=>m.time>=s))), closeQty=r4(it.qty-sum(hist.filter(m=>m.time>=e)));
+    const inMonth=hist.filter(m=>m.time>=s&&m.time<e);
+    const buys=inMonth.filter(m=>m.type==='in').map(m=>({qty:m.delta,unit:m.unitCost,total:m.value,time:m.time}));
+    const buyQty=r4(buys.reduce((t,b)=>t+b.qty,0)), buyVal=r2(buys.reduce((t,b)=>t+b.total,0));
+    const outQty=r4(-sum(inMonth.filter(m=>m.type==='out'))), wasteQty=r4(-sum(inMonth.filter(m=>m.type==='waste'))), adjQty=r4(sum(inMonth.filter(m=>m.type==='adjust')));
+    const unit=costAt(it,hist,e), openCost=costAt(it,hist,s);
+    const toOrder=closeQty<=it.low?(it.max?r4(Math.max(it.max-closeQty,0)):null):0;
+    rows.push({it,openQty,openVal:r2(openQty*openCost),buys,buyQty,buyVal,afterBuy:r4(openQty+buyQty),outQty,wasteQty,adjQty,closeQty,unit:r2(unit),value:r2(closeQty*unit),toOrder,below:closeQty<=it.low,above:it.max?closeQty>it.max:false});
+  });
+  const rounds=Math.max(2,...rows.map(r=>r.buys.length));
+  const T={openVal:0,buyVal:0,value:0};
+  rows.forEach(r=>{ T.openVal+=r.openVal; T.buyVal+=r.buyVal; T.value+=r.value; });
+  Object.keys(T).forEach(k=>T[k]=r2(T[k]));
+  return {ym,rows,rounds,totals:T,below:rows.filter(r=>r.below).length};
+}
+function buyCell(b){ return b?`${fmt(b.qty)} @ ${baht(b.unit)}<br><span class="note">${new Date(b.time).toLocaleDateString('th-TH',{day:'numeric',month:'short'})}</span>`:''; }
+function reportHtml(){
+  const months=reportMonths();
+  if(!S.reportYm||!months.includes(S.reportYm)) S.reportYm=months[0];
+  const R=monthReport(S.reportYm);
+  const cats=[...new Set(R.rows.map(r=>r.it.cat||'อื่นๆ'))];
+  const cols=18+R.rounds;
+  const body=R.rows.length?cats.map(c=>{
+    const rs=R.rows.filter(r=>(r.it.cat||'อื่นๆ')===c), sub=r2(rs.reduce((t,r)=>t+r.value,0));
+    return `<tr class="cat"><td colspan="${cols-2}">${esc(c)}</td><td class="num">${baht(sub)}</td><td></td></tr>`+rs.map(r=>{ const ex=expState(r.it);
+      return `<tr><td>${esc(r.it.code||'')}</td><td>${esc(r.it.name)}</td><td>${esc(r.it.brand||'')}</td><td>${esc(r.it.loc||'')}</td><td class="${ex?'warn-c':''}">${r.it.exp?dd(r.it.exp):''}</td>
+      <td class="num">${fmt(r.it.low)}</td><td class="num">${r.it.max?fmt(r.it.max):''}</td><td>${esc(r.it.unit)}</td>
+      <td class="num">${fmt(r.openQty)}</td><td class="num">${r.buyQty?fmt(r.buyQty):'0'}</td>${Array.from({length:R.rounds},(_,i)=>`<td class="num buy">${buyCell(r.buys[i])}</td>`).join('')}
+      <td class="num">${fmt(r.afterBuy)}</td><td class="num">${fmt(r.outQty)}</td><td class="num">${r.wasteQty?fmt(r.wasteQty):''}</td><td class="num">${r.adjQty?(r.adjQty>0?'+':'')+fmt(r.adjQty):''}</td>
+      <td class="num ${r.below?'low':''}">${fmt(r.closeQty)}</td><td class="num">${baht(r.unit)}</td><td class="num">${baht(r.value)}</td>
+      <td>${r.below?`<span class="warn-c">ควรสั่ง${r.toOrder?' '+fmt(r.toOrder)+' '+esc(r.it.unit):''}</span>`:r.above?'<span class="low">เกินขั้นสูงสุด</span>':''}${ex?(r.below||r.above?'<br>':'')+`<span class="warn-c">${ex}</span>`:''}</td></tr>`; }).join('');
+  }).join('')+`<tr class="tot"><td colspan="${cols-2}">รวมมูลค่าคงเหลือทั้งหมด</td><td class="num">${baht(R.totals.value)}</td><td></td></tr>`
+  :`<tr><td colspan="${cols}" class="empty">ยังไม่มีวัตถุดิบ</td></tr>`;
+  return `<div class="card noprint"><div class="row" style="align-items:flex-end">
+    <div class="f" style="max-width:200px"><label>ประจำเดือน</label><select id="rep_ym">${months.map(m=>`<option value="${m}" ${m===S.reportYm?'selected':''}>${ymLabel(m,true)}</option>`).join('')}</select></div>
+    <button class="g" data-act="exportXlsx" data-v="one">⤓ Excel เดือนนี้</button><button class="s" data-act="exportXlsx" data-v="all">⤓ Excel ทุกเดือน (แยกชีต)</button><button class="s" data-act="print">🖨️ พิมพ์</button></div>
+    <div class="note">ยกมา/คงเหลือคำนวณจากรายการรับ/เบิกที่บันทึกไว้ · ราคาต่อหน่วยเป็นต้นทุนถัวเฉลี่ย ณ สิ้นเดือน · เดือนปัจจุบันแสดงยอดถึงตอนนี้</div></div>
+  <div class="grid noprint"><div class="stat"><div class="n">${baht(R.totals.openVal)}</div><div class="l">มูลค่ายกมา</div></div>
+    <div class="stat"><div class="n">${baht(R.totals.buyVal)}</div><div class="l">ซื้อเข้าในเดือน</div></div>
+    <div class="stat"><div class="n">${baht(R.totals.value)}</div><div class="l">มูลค่าคงเหลือสิ้นเดือน</div></div>
+    <div class="stat ${R.below?'warn':''}"><div class="n">${R.below}</div><div class="l">รายการถึงขั้นต่ำ ควรสั่งซื้อ</div></div></div>
+  <div class="card"><h3 style="text-align:center">รายการตรวจเช็คสต๊อกวัตถุดิบ ณ วันสิ้นเดือน ประจำเดือน ${ymLabel(R.ym,true)} — มากิน มาม่า</h3>
+  <div class="scroll"><table class="rep"><thead><tr><th rowspan="2">รหัสสินค้า</th><th rowspan="2">รายการสินค้า</th><th rowspan="2">ยี่ห้อ/รุ่น</th><th rowspan="2">ที่เก็บ</th><th rowspan="2">วันหมดอายุ</th><th colspan="2">กำหนดจำนวน</th><th rowspan="2">หน่วยนับ</th><th rowspan="2">ยอดยกมา</th><th rowspan="2">จำนวนสั่งซื้อ</th><th colspan="${R.rounds}">รายการที่สั่งซื้อ / ราคาต่อหน่วย</th><th rowspan="2">รวมยอดหลังสั่งซื้อ</th><th rowspan="2">รวมยอดเบิก</th><th rowspan="2">ของเสีย</th><th rowspan="2">ปรับยอด (นับ)</th><th rowspan="2">รวมคงเหลือ</th><th rowspan="2">ราคาต่อหน่วย</th><th rowspan="2">รวมมูลค่า</th><th rowspan="2">หมายเหตุ</th></tr>
+  <tr><th>ขั้นต่ำสุด</th><th>ขั้นสูงสุด</th>${Array.from({length:R.rounds},(_,i)=>`<th>รอบที่ ${i+1}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+function reportAoa(ym){
+  const R=monthReport(ym);
+  const head1=['รหัสสินค้า','รายการสินค้า','ยี่ห้อ/รุ่น','ที่เก็บ','วันหมดอายุ','กำหนดจำนวน','','หน่วยนับ','ยอดยกมา','จำนวนสั่งซื้อ'];
+  const head2=['','','','','','ขั้นต่ำสุด','ขั้นสูงสุด','','',''];
+  for(let i=0;i<R.rounds;i++){ head1.push(i===0?'รายการที่สั่งซื้อ / ราคาต่อหน่วย':''); head2.push('รอบที่ '+(i+1)); }
+  head1.push('รวมยอดหลังสั่งซื้อ','รวมยอดเบิก','ของเสีย','ปรับยอด (นับ)','รวมคงเหลือ','ราคาต่อหน่วย','รวมมูลค่า','หมายเหตุ');
+  head2.push('','','','','','','','');
+  const aoa=[['รายการตรวจเช็คสต๊อกวัตถุดิบ ณ วันสิ้นเดือน ประจำเดือน '+ymLabel(ym,true)+' — มากิน มาม่า'],head1,head2];
+  const cats=[...new Set(R.rows.map(r=>r.it.cat||'อื่นๆ'))];
+  cats.forEach(c=>{
+    const rs=R.rows.filter(r=>(r.it.cat||'อื่นๆ')===c);
+    aoa.push(['',c]);
+    rs.forEach(r=>{
+      const row=[r.it.code||'',r.it.name,r.it.brand||'',r.it.loc||'',r.it.exp?dd(r.it.exp):'',r.it.low,r.it.max??'',r.it.unit,r.openQty,r.buyQty];
+      for(let i=0;i<R.rounds;i++){ const b=r.buys[i]; row.push(b?fmt(b.qty)+' @ '+r2(b.unit)+' ('+new Date(b.time).toLocaleDateString('th-TH',{day:'numeric',month:'short'})+')':''); }
+      row.push(r.afterBuy,r.outQty,r.wasteQty,r.adjQty,r.closeQty,r.unit,r.value,(r.below?'ควรสั่ง'+(r.toOrder?' '+r.toOrder+' '+r.it.unit:''):r.above?'เกินขั้นสูงสุด':'')+(expState(r.it)?' '+expState(r.it):''));
+      aoa.push(row);
+    });
+  });
+  const last=head1.length;
+  const tot=Array(last).fill(''); tot[1]='รวมมูลค่าคงเหลือทั้งหมด'; tot[last-2]=R.totals.value; aoa.push(tot);
+  return {aoa,rounds:R.rounds,width:last};
+}
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload=()=>res(window.XLSX); sc.onerror=()=>rej(new Error('โหลดตัวสร้างไฟล์ Excel ไม่สำเร็จ (ต้องต่ออินเทอร์เน็ต)')); document.head.appendChild(sc); });
+}
+async function exportXlsx(all){
+  let X; try{ X=await loadXlsx(); }catch(e){ return toast(e.message); }
+  const wb=X.utils.book_new();
+  const months=all?reportMonths().slice().reverse():[S.reportYm];
+  months.forEach(ym=>{
+    const {aoa,rounds,width}=reportAoa(ym), ws=X.utils.aoa_to_sheet(aoa);
+    const ro=10;
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:width-1}},{s:{r:1,c:5},e:{r:1,c:6}},{s:{r:1,c:ro},e:{r:1,c:ro+rounds-1}}]
+      .concat([0,1,2,3,4,7,8,9].map(c=>({s:{r:1,c},e:{r:2,c}})))
+      .concat(Array.from({length:8},(_,i)=>({s:{r:1,c:ro+rounds+i},e:{r:2,c:ro+rounds+i}})));
+    ws['!cols']=[{wch:9},{wch:26},{wch:14},{wch:12},{wch:11},{wch:8},{wch:8},{wch:8},{wch:9},{wch:9}].concat(Array.from({length:rounds},()=>({wch:20}))).concat([{wch:10},{wch:9},{wch:8},{wch:9},{wch:9},{wch:10},{wch:12},{wch:24}]);
+    X.utils.book_append_sheet(wb,ws,ymLabel(ym));
+  });
+  X.writeFile(wb,'สต๊อกมากินมาม่า_'+(all?'ทุกเดือน':ymLabel(S.reportYm).replace(/[. ]/g,''))+'.xlsx');
+}
 async function submitMove(){
   if(!needUser()) return;
   const itemId=$('#mv_item').value, q=posn($('#mv_qty').value), note=$('#mv_note').value.trim(), t=S.moveType;
@@ -362,6 +538,10 @@ document.addEventListener('click',async e=>{
   if(a==='tab'){ if(S.wizard&&!confirm('กำลังกรอกข้อมูลนับสต๊อกอยู่ ออกจากหน้านี้และทิ้งข้อมูลที่กรอก?')) return; S.wizard=null; S.tab=v; renderTab(); }
   else if(a==='setUser'||a==='saveUser'){ if(a==='setUser'){S.tab='settings';renderTab();return} const n=$('#uname').value.trim(); S.user=n; sv('user',n); renderHeader(); toast('บันทึกชื่อแล้ว'); }
   else if(a==='addItem') addItem();
+  else if(a==='editItem'){ S.editId=v; renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
+  else if(a==='cancelEdit'){ S.editId=null; renderTab(); }
+  else if(a==='exportXlsx') exportXlsx(v==='all');
+  else if(a==='print') window.print();
   else if(a==='seed') seed();
   else if(a==='delItem'){ const it=S.items.find(i=>i.id===v); if(it&&confirm('ลบ "'+it.name+'"? ประวัติรับ/เบิกเดิมยังอยู่ แต่จะไม่นับในสรุปงวดต่อไป')) removeItem(v); }
   else if(a==='mtype'){ S.moveType=v; renderTab(); }
@@ -378,6 +558,7 @@ document.addEventListener('click',async e=>{
   else if(a==='disconnect'){ syncStore.stop(); toast('หยุดซิงก์แล้ว — ข้อมูลที่แก้จะถูกส่งขึ้นเมื่อเชื่อมต่อใหม่'); }
   else if(a==='resetLocal'){ if(syncOn()) return toast('หยุดซิงก์ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้ (ข้อมูลบน Supabase ไม่ถูกลบ)')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); syncStore.forget(); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
 });
+document.addEventListener('change',e=>{ if(e.target.id==='rep_ym'){ S.reportYm=e.target.value; refreshLive(); } });
 document.addEventListener('input',e=>{
   const t=e.target; if(!t.dataset.d) return;
   const [id,f]=t.dataset.d.split('|'); (S.draft[id]=S.draft[id]||{})[f]=t.value===''?undefined:parseFloat(t.value);
