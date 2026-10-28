@@ -536,7 +536,7 @@ let lastOrderForPrint = null;
 // พร้อมซิงค์ 'orders' และ 'stock' ผ่าน Supabase (ถ้าเชื่อมต่อไว้) เพื่อเชื่อมกับระบบหลังบ้าน
 const LS_PREFIX = 'mm_pos_';
 const SYNC_KEYS = ['orders','stock']; // เฉพาะ 2 คีย์นี้ที่ซิงค์กับระบบหลังบ้าน — เมนู/ท็อปปิ้ง/ชนิดมาม่า/รหัสผ่านยังคงเก็บแยกในเครื่องนี้เท่านั้น
-let syncConnected = false, syncBusy = false, syncError = '';
+let syncStatus = {state:'off', pending:0, error:''};
 
 function loadLocal(key, fallback){
   try{ const r = localStorage.getItem(LS_PREFIX+key); return r!==null ? JSON.parse(r) : fallback; }
@@ -554,12 +554,7 @@ async function getOrInit(key, def){
 }
 function persist(key, val){
   saveLocal(key, val);
-  if(syncConnected && SYNC_KEYS.includes(key)){
-    MMSync.put('kv', key, val).catch(e=>{
-      console.error('Supabase save failed', key, e);
-      showToast('ซิงค์กับ Supabase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): ' + e.message);
-    });
-  }
+  if(SYNC_KEYS.includes(key)) syncStore.save();
 }
 async function saveMenuData(){ persist('menu', menu); }
 async function saveStockData(){ persist('stock', stock); }
@@ -569,68 +564,54 @@ async function saveNoodlesData(){ persist('noodles', noodleTypes); }
 async function savePasscodeData(){ persist('passcode', {code:passcode}); }
 
 // --- SUPABASE (ซิงค์ orders+stock กับระบบหลังบ้าน) ---
-function applyRemote(key, val){
-  if(key==='orders') orders = val; else if(key==='stock') stock = val;
-  saveLocal(key, val);
-}
+// ออร์เดอร์เก็บแยกทีละรายการ (หลายเครื่องลงออร์เดอร์พร้อมกันไม่ทับกัน) ยอดสต๊อกส่งเป็นส่วนต่าง
+// ขายตอนเน็ตหลุดได้ตามปกติ ข้อมูลจะถูกส่งขึ้นเมื่อกลับมาออนไลน์
+const syncStore = MMSync.createStore({
+  name: 'pos',
+  keys: {
+    orders: {list:true, coll:'orders', sort:(a,b)=>String(b.time||'').localeCompare(String(a.time||''))},
+    stock: {list:true, coll:'stock', delta:['qty']},
+  },
+  get: key => key==='orders' ? orders : stock,
+  set: (key, val) => { if(key==='orders') orders = val; else stock = val; saveLocal(key, val); },
+  onData: () => { renderOrders(); renderReport(); renderStock(); renderMenu(); },
+  onStatus: s => {
+    const formChanged = (syncStatus.state==='off') !== (s.state==='off');
+    syncStatus = s;
+    renderSyncSection(formChanged);
+  },
+});
 async function connectSync(code){
-  syncBusy = true; syncError = ''; renderSyncSection();
-  try{
-    const { member } = await MMSync.connect(code);
-    if(member){
-      MMSync.subscribe(evt=>{
-        if(evt.coll!=='kv' || !SYNC_KEYS.includes(evt.id) || evt.type!=='upsert' || evt.data===null) return;
-        applyRemote(evt.id, evt.data);
-        renderOrders(); renderReport(); renderStock(); renderMenu();
-      });
-      const rows = await MMSync.list('kv');
-      for(const key of SYNC_KEYS){
-        const row = rows.find(r=>r.id===key);
-        if(row && row.data!==null) applyRemote(key, row.data);
-        else {
-          // ยังไม่มีข้อมูลบน Supabase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
-          const cur = key==='orders' ? orders : stock;
-          if(cur && cur.length>0) MMSync.put('kv', key, cur).catch(e=>console.error('seed failed', key, e));
-        }
-      }
-      renderOrders(); renderReport(); renderStock(); renderMenu();
-      syncConnected = true;
-      if(code) showToast('เชื่อมต่อ Supabase แล้ว');
-    }
-  }catch(e){
-    console.error(e);
-    syncConnected = false;
-    syncError = e.message;
-  }
-  syncBusy = false;
-  renderSyncSection();
+  try{ if(await syncStore.start(code)) showToast('เชื่อมต่อ Supabase แล้ว'); }
+  catch(e){ showToast(e.message); }
 }
-async function disconnectSync(){
-  await MMSync.disconnect();
-  syncConnected = false; syncError = '';
-  renderSyncSection();
-  showToast('ยกเลิกการเชื่อมต่อแล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
+function disconnectSync(){
+  syncStore.stop();
+  showToast('หยุดซิงค์แล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป ข้อมูลที่แก้จะถูกส่งขึ้นเมื่อเชื่อมต่อใหม่)');
 }
-function renderSyncSection(){
+function renderSyncSection(rebuildForm){
   const statusEl = document.getElementById('fbStatusNote');
   const errEl = document.getElementById('fbErrorNote');
   const formWrap = document.getElementById('fbFormWrap');
   if(!statusEl || !formWrap) return;
-  statusEl.innerHTML = syncConnected
-    ? '<span style="color:var(--green);">🟢 เชื่อมต่อแล้ว — ออร์เดอร์และสต๊อกจะซิงค์กับระบบหลังบ้านแบบเรียลไทม์</span>'
-    : syncBusy ? '<span style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อ...</span>'
+  const st = syncStatus.state, n = syncStatus.pending;
+  statusEl.innerHTML = st==='online'
+    ? '<span style="color:var(--green);">🟢 เชื่อมต่อแล้ว — ออร์เดอร์และสต๊อกซิงก์กับระบบหลังบ้านแบบเรียลไทม์' + (n ? ' (กำลังส่ง ' + n + ' รายการ)' : '') + '</span>'
+    : st==='offline' ? '<span style="color:var(--accent-dark);">🟡 ออฟไลน์/กำลังเชื่อมต่อใหม่ — ขายต่อได้ บันทึกในเครื่องไว้แล้ว' + (n ? ' รอส่ง ' + n + ' รายการ' : '') + '</span>'
+    : st==='connecting' ? '<span style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อ...</span>'
     : '<span style="color:var(--ink-soft);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเครื่องนี้เท่านั้น)</span>';
-  errEl.textContent = syncError ? '⚠ ' + syncError : '';
-  if(syncConnected){
-    formWrap.innerHTML = `<button class="advance-btn" id="fbDisconnectBtn" style="margin-top:8px;">ยกเลิกการเชื่อมต่อ</button>`;
+  errEl.textContent = syncStatus.error ? '⚠ ' + syncStatus.error : '';
+  if(!rebuildForm && formWrap.childElementCount) return; // ไม่สร้างฟอร์มใหม่ทุกครั้ง กันช่องที่กำลังพิมพ์หาย
+  if(st!=='off'){
+    formWrap.innerHTML = `<button class="advance-btn" id="fbDisconnectBtn" style="margin-top:8px;">หยุดซิงก์ในเครื่องนี้</button>`;
     document.getElementById('fbDisconnectBtn').onclick = disconnectSync;
   } else {
     formWrap.innerHTML = `
       <div class="form-row"><label>รหัสร้าน</label><input id="sync-code" type="password" autocomplete="off" placeholder="รหัสเดียวกับระบบหลังบ้าน"></div>
-      <button class="save-menu-btn" id="fbConnectBtn" ${syncBusy?'disabled':''}>☁️ เชื่อมต่อ</button>`;
+      <button class="save-menu-btn" id="fbConnectBtn">☁️ เชื่อมต่อ</button>`;
     document.getElementById('fbConnectBtn').onclick = ()=>{
       const code = document.getElementById('sync-code').value;
-      if(code.length<6){ showToast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      if(!code){ showToast('กรุณาใส่รหัสร้าน'); return; }
       connectSync(code);
     };
   }
@@ -645,7 +626,8 @@ async function loadAll(){
   const pc = await getOrInit('passcode', {code:''});
   passcode = pc.code || '';
   renderCats(); renderMenu(); renderCart(); renderStock(); renderOrders(); renderReport(); renderItemList(); renderRecipeRows(); renderToppingList(); renderNoodleList(); renderPriceWarning();
-  connectSync();
+  renderSyncSection(true);
+  syncStore.start();
 }
 
 

@@ -126,7 +126,7 @@
     menu:[], toppings:[], costs:[], stock:[], waste:[], settings:{ownerPin:'', estimatedBowlsPerMonth:600}, orders:[],
     currentUser:null, staff:[], accessLog:[], loginInput:'', loginRole:ROLES[0], timeLogs:[],
     recipeCart:[], menuFormDraft:{name:'',price:'',portion:'',method:''}, editingMenuId:null, lastRefresh:null,
-    syncConnected:false, syncError:'', syncBusy:false,
+    sync:{state:'off', pending:0, error:''},
     customers:[], custFormDraft:{phone:'',name:'',tags:'',notes:''}, editingCustId:null,
   };
   const SYNC_KEYS = ['menu','toppings','costs','stock','waste','settings','orders','staff','accessLog','timeLogs','customers'];
@@ -152,53 +152,52 @@
   }
   function saveData(key, val){
     saveDataLocal(key, val);
-    if(state.syncConnected){
-      MMSync.put('kv', key, val).catch(e=>{
-        console.error('Supabase save failed', key, e);
-        toast('ซิงค์กับ Supabase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): '+e.message);
-      });
-    }
+    if(SYNC_KEYS.includes(key)) syncStore.save();
   }
 
   // --- SUPABASE (ซิงค์ข้ามอุปกรณ์แบบเรียลไทม์) ---
-  function hasData(v){ return v && (Array.isArray(v) ? v.length>0 : Object.keys(v).length>0); }
-  async function connectSync(code){
-    state.syncBusy = true; state.syncError = ''; render();
-    try{
-      const { member } = await MMSync.connect(code);
-      if(!member){ state.syncBusy = false; render(); return; }
-      MMSync.subscribe(evt=>{
-        if(evt.coll!=='kv' || !SYNC_KEYS.includes(evt.id) || evt.type!=='upsert' || evt.data===null) return;
-        state[evt.id] = evt.data;
-        saveDataLocal(evt.id, evt.data);
-        if(state.loaded) render();
-      });
-      const rows = await MMSync.list('kv');
-      const remote = {};
-      rows.forEach(r=>{ remote[r.id] = r.data; });
-      for(const key of SYNC_KEYS){
-        if(remote[key]!==undefined && remote[key]!==null){
-          state[key] = remote[key];
-          saveDataLocal(key, remote[key]);
-        } else if(hasData(state[key])){
-          // ยังไม่มีข้อมูลบน Supabase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
-          MMSync.put('kv', key, state[key]).catch(e=>console.error('seed failed', key, e));
-        }
-      }
-      state.syncConnected = true;
-      if(code) toast('เชื่อมต่อ Supabase แล้ว');
-    }catch(e){
-      console.error(e);
-      state.syncConnected = false;
-      state.syncError = e.message;
-    }
-    state.syncBusy = false;
-    render();
+  // ซิงก์แบบรายรายการ: เครื่องอื่นเพิ่ม/แก้คนละรายการได้โดยไม่ทับกัน, ยอดสต๊อกส่งเป็นส่วนต่าง,
+  // ของที่บันทึกตอนออฟไลน์จะถูกส่งขึ้นเมื่อกลับมาออนไลน์ ('orders' และ 'stock' ใช้ร่วมกับ POS หน้าร้าน)
+  const SYNC_COLL = {orders:'orders', stock:'stock'};
+  const syncKeys = {};
+  SYNC_KEYS.forEach(k=>{ syncKeys[k] = k==='settings' ? {coll:'bo_doc'} : {list:true, coll:SYNC_COLL[k]||('bo_'+k), delta:k==='stock'?['qty']:undefined}; });
+  const syncStore = MMSync.createStore({
+    name:'bo', keys:syncKeys,
+    get:key=>state[key],
+    set:(key,val)=>{ state[key] = val; saveDataLocal(key, val); },
+    onData:()=>{ if(state.loaded) render(); },
+    onStatus:s=>{
+      const wasOff = state.sync.state==='off';
+      state.sync = s;
+      // อัปเดตเฉพาะป้ายสถานะ (render ทั้งหน้าจะล้างช่องที่กำลังพิมพ์) ยกเว้นตอนเปลี่ยนระหว่างเชื่อมต่อ/ไม่เชื่อมต่อ
+      if(state.loaded && wasOff !== (s.state==='off')) render(); else updateSyncBadges();
+    },
+  });
+  function syncLabel(){
+    const s = state.sync;
+    if(s.state==='online') return '<span style="color:var(--scallion);">🟢 เชื่อมต่อแล้ว — ซิงค์กับทุกอุปกรณ์ของร้านแบบเรียลไทม์'+(s.pending?' (กำลังส่ง '+s.pending+' รายการ)':'')+'</span>';
+    if(s.state==='offline') return '<span style="color:var(--yolk);">🟡 ออฟไลน์/กำลังเชื่อมต่อใหม่ — บันทึกในเครื่องไว้แล้ว'+(s.pending?' รอส่ง '+s.pending+' รายการ':'')+'</span>';
+    if(s.state==='connecting') return '<span style="color:var(--cream-dim);">⏳ กำลังเชื่อมต่อ...</span>';
+    return '<span style="color:var(--cream-dim);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเบราว์เซอร์นี้เท่านั้น)</span>';
   }
-  async function disconnectSync(){
-    await MMSync.disconnect();
-    state.syncConnected = false; state.syncError = '';
-    render(); toast('ยกเลิกการเชื่อมต่อแล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
+  function updateSyncBadges(){
+    const el = document.getElementById('mm-sync-status'); if(el) el.innerHTML = syncLabel();
+    const er = document.getElementById('mm-sync-error'); if(er) er.textContent = state.sync.error ? '⚠ '+state.sync.error : '';
+    const db = document.getElementById('mm-dash-sync'); if(db) db.textContent = dashSyncText();
+  }
+  function dashSyncText(){
+    const s = state.sync.state;
+    return s==='online' ? '🟢 ซิงค์เรียลไทม์กับ Supabase (เห็นข้อมูลสดจากทุกอุปกรณ์)'
+      : s==='offline' ? '🟡 ออฟไลน์ — แสดงข้อมูลล่าสุดในเครื่อง จะซิงค์ให้เมื่อกลับมาออนไลน์'
+      : '🔄 อัปเดตทุก 6 วินาที (เฉพาะเบราว์เซอร์นี้ — ยังไม่ได้เชื่อมต่อ Supabase)';
+  }
+  async function connectSync(code){
+    try{ if(await syncStore.start(code)) toast('เชื่อมต่อ Supabase แล้ว'); }
+    catch(e){ toast(e.message); }
+  }
+  function disconnectSync(){
+    syncStore.stop();
+    toast('หยุดซิงค์แล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป ข้อมูลที่แก้จะถูกส่งขึ้นเมื่อเชื่อมต่อใหม่)');
   }
 
   function load(){
@@ -221,7 +220,7 @@
     if(headerLogo) headerLogo.src = LOGO_SRC;
     state.lastRefresh = new Date();
     if(state.tab==='dash' || state.tab==='reports') startAutoRefresh();
-    connectSync();
+    syncStore.start();
     render();
   }
 
@@ -229,7 +228,7 @@
   function startAutoRefresh(){
     if(refreshTimer) return;
     refreshTimer = setInterval(()=>{
-      if(state.syncConnected) return; // Supabase ส่งข้อมูลมาแบบเรียลไทม์อยู่แล้ว ไม่ต้อง poll ซ้ำ
+      if(state.sync.state!=='off') return; // ซิงค์กับ Supabase อยู่ ข้อมูลอัปเดตเองแล้ว ไม่ต้อง poll ซ้ำ
       // อ่านข้อมูลล่าสุดจาก localStorage ของเบราว์เซอร์นี้ซ้ำ เพื่อให้แดชบอร์ด/รายงานอัปเดตเองโดยไม่ต้องรีเฟรชหน้า
       state.orders = loadData('orders', state.orders);
       state.stock = loadData('stock', state.stock);
@@ -582,7 +581,7 @@
 
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div class="mm-hint" style="margin:0;">${state.syncConnected ? '🟢 ซิงค์เรียลไทม์กับ Supabase (เห็นข้อมูลสดจากทุกอุปกรณ์)' : '🔄 อัปเดตทุก 6 วินาที (เฉพาะเบราว์เซอร์นี้ — ยังไม่ได้เชื่อมต่อ Supabase)'}${state.lastRefresh?' · ล่าสุด '+state.lastRefresh.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
+        <div class="mm-hint" style="margin:0;"><span id="mm-dash-sync">${dashSyncText()}</span>${state.lastRefresh?' · ล่าสุด '+state.lastRefresh.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
         <div style="display:flex;gap:6px;">
           <button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-refresh-now-btn">รีเฟรชตอนนี้</button>
           ${state.settings.ownerPin?'<button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-relock-btn">🔒 ล็อกหน้าจอ</button>':''}
@@ -1024,25 +1023,25 @@
       <div class="mm-section-title">☁️ Supabase (ซิงค์ข้อมูลข้ามอุปกรณ์แบบเรียลไทม์)</div>
       <div class="mm-form">
         <div class="mm-li-main" style="margin-bottom:8px;">
-          สถานะ: ${state.syncConnected ? '<span style="color:var(--scallion);">🟢 เชื่อมต่อแล้ว — ข้อมูลจะซิงค์กับทุกอุปกรณ์ของร้านแบบเรียลไทม์</span>' : state.syncBusy ? '<span style="color:var(--cream-dim);">⏳ กำลังเชื่อมต่อ...</span>' : '<span style="color:var(--cream-dim);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเบราว์เซอร์นี้เท่านั้น)</span>'}
+          สถานะ: <span id="mm-sync-status">${syncLabel()}</span>
         </div>
-        ${state.syncError ? '<div class="mm-hint" style="color:var(--chili);">⚠ '+escapeHtml(state.syncError)+'</div>' : ''}
-        ${!state.syncConnected ? `
+        <div class="mm-hint" id="mm-sync-error" style="color:var(--chili);">${state.sync.error ? '⚠ '+escapeHtml(state.sync.error) : ''}</div>
+        ${state.sync.state==='off' || state.sync.state==='connecting' ? `
         <div class="mm-form-row">
-          <div class="mm-field"><label>รหัสร้าน</label><input id="sync-code" type="password" autocomplete="off" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
+          <div class="mm-field"><label>รหัสร้าน</label><input id="sync-code" type="password" autocomplete="off" placeholder="รหัสร้านที่ได้รับจากเจ้าของร้าน"/></div>
         </div>
-        <button class="mm-add-btn" id="mm-connect-sync-btn" ${state.syncBusy?'disabled':''}>☁️ เชื่อมต่อ</button>
+        <button class="mm-add-btn" id="mm-connect-sync-btn">☁️ เชื่อมต่อ</button>
         ` : `
         <div class="mm-form-row">
-          <div class="mm-field"><label>เปลี่ยนรหัสร้าน</label><input id="sync-newcode" type="password" autocomplete="off" placeholder="รหัสใหม่ อย่างน้อย 6 ตัวอักษร"/></div>
+          <div class="mm-field"><label>เปลี่ยนรหัสร้าน</label><input id="sync-newcode" type="password" autocomplete="off" placeholder="รหัสใหม่ อย่างน้อย 8 ตัวอักษร"/></div>
         </div>
         <button class="mm-add-btn" id="mm-change-code-btn">บันทึกรหัสใหม่</button>
-        <button class="mm-add-btn secondary" id="mm-disconnect-sync-btn">ยกเลิกการเชื่อมต่อ</button>`}
+        <button class="mm-add-btn secondary" id="mm-disconnect-sync-btn">หยุดซิงค์ในหน้านี้</button>`}
       </div>
       <div class="mm-hint">
         ใส่ <b>รหัสร้าน</b> ชุดเดียวกันในทุกอุปกรณ์ที่ต้องการเห็นข้อมูลร่วมกัน (เครื่อง POS ที่ร้าน + มือถือเจ้าของร้าน) — ใส่ครั้งเดียวต่อเบราว์เซอร์ และใช้ได้กับทุกหน้า (หลังบ้าน / POS / สต๊อก)<br/>
-        <b>ครั้งแรกสุด:</b> รหัสที่ใส่จะถูกตั้งเป็นรหัสร้านเลย จากนั้นอุปกรณ์อื่นต้องใส่รหัสเดียวกันนี้ — เก็บรหัสไว้เป็นความลับ ใครรู้รหัสจะเข้าถึงข้อมูลร้าน (ต้นทุน ค่าแรง กำไร) ได้<br/>
-        ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังไม่มีข้อมูลนั้น)
+        เก็บรหัสไว้เป็นความลับ ใครรู้รหัสจะเข้าถึงข้อมูลร้าน (ต้นทุน ค่าแรง กำไร) ได้ — ใส่ผิดได้ 5 ครั้งต่อ 15 นาที<br/>
+        ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังไม่มีข้อมูลนั้น) · ถ้าเน็ตหลุด ใช้งานต่อได้ตามปกติ ระบบจะส่งข้อมูลที่ค้างให้เองเมื่อกลับมาออนไลน์
       </div>
 
       <div class="mm-section-title">การเชื่อมต่อภายนอกอื่นๆ</div>
@@ -1297,13 +1296,13 @@
     const connectSyncBtn = document.getElementById('mm-connect-sync-btn');
     if(connectSyncBtn) connectSyncBtn.addEventListener('click', ()=>{
       const code = document.getElementById('sync-code').value;
-      if(code.length<6){ toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      if(!code){ toast('กรุณาใส่รหัสร้าน'); return; }
       connectSync(code);
     });
     const changeCodeBtn = document.getElementById('mm-change-code-btn');
     if(changeCodeBtn) changeCodeBtn.addEventListener('click', ()=>{
       const code = document.getElementById('sync-newcode').value;
-      if(code.length<6){ toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      if(code.length<8){ toast('รหัสร้านต้องยาวอย่างน้อย 8 ตัวอักษร'); return; }
       MMSync.setCode(code).then(()=>toast('เปลี่ยนรหัสร้านแล้ว — อุปกรณ์ใหม่ต้องใช้รหัสนี้'), e=>toast('เปลี่ยนรหัสไม่สำเร็จ: '+e.message));
     });
     const disconnectSyncBtn = document.getElementById('mm-disconnect-sync-btn');

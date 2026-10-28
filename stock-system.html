@@ -87,17 +87,24 @@ const dd=iso=>new Date(iso).toLocaleDateString('th-TH',{day:'numeric',month:'sho
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
 const TL={in:'รับเข้า',out:'เบิกใช้',waste:'ของเสีย',adjust:'ปรับยอด/นับ'};
 
-const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),fbOn:false,fbBusy:false,fbErr:'',last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in'};
+const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),sync:{state:'off',pending:0,error:''},last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in'};
 
 const SEED=[['มาม่าไทย','ซอง'],['มาม่าบิ๊กแพ็ค','ซอง'],['มาม่าเกาหลี','ซอง'],['ไข่ไก่','ฟอง'],['ผักสด','ชุด'],['ลูกชิ้นไก่','ลูก'],['ลูกชิ้นปลา','ลูก'],['ลูกชิ้นเนื้อ','ลูก'],['ไส้กรอกหนังกรอบ','ชิ้น'],['เต้าหู้','ชิ้น'],['เนื้อวัว','กรัม'],['ไก่สับ','กรัม'],['สาหร่ายวากาเมะ','ห่อ'],['โบโลน่า','ชิ้น'],['แฮมไก่','ชิ้น'],['ปูอัด','ชิ้น'],['ชีสแผ่น','แผ่น'],['ไก่ฉีก','กรัม'],['หนังไก่กรอบ','ชิ้น'],['ปลาหมึก','กรัม'],['กุ้ง','ตัว'],['นักเกต','ชิ้น'],['ชีสบอล','ชิ้น'],['เฟรนช์ฟราย','กรัม'],['ไก่ป๊อป','ชิ้น'],['ไก่ไร้กระดูก','ชิ้น'],['ซอสเกาหลี','มล.'],['ซอสเทอริยากิ','มล.'],['ข้าวสวย','ถ้วย'],['ไอศกรีมเนสเล่','ถ้วย'],['น้ำดื่ม','ขวด'],['น้ำแข็ง','กก.']];
 
 /* ---- data layer: เก็บใน localStorage เสมอ ถ้าต่อ Supabase จะเขียนขึ้นรายรายการด้วย (กันเขียนทับกันระหว่างอุปกรณ์) ---- */
-const COLLS=['items','moves','periods'], CK=k=>'stock_'+k;
+// ยอดคงเหลือ (qty) ส่งเป็นส่วนต่าง ตัด/รับพร้อมกันหลายเครื่องก็ไม่หาย, ของที่บันทึกตอนออฟไลน์จะถูกส่งขึ้นภายหลัง
+const syncStore=MMSync.createStore({
+  name:'stock',
+  keys:{items:{list:true,coll:'stock_items',delta:['qty']},moves:{list:true,coll:'stock_moves'},periods:{list:true,coll:'stock_periods'}},
+  get:k=>S[k], set:(k,v)=>{ S[k]=v; sv(k,v); },
+  onData:()=>{ S.last=new Date(); refreshLive(); },
+  onStatus:s=>{ const re=(S.sync.state==='off')!==(s.state==='off'); S.sync=s; if(re&&S.tab==='settings') renderTab(); else { renderHeader(); const el=$('#syncst'); if(el) el.innerHTML=syncLabel(); const er=$('#syncerr'); if(er) er.textContent=s.error?'⚠ '+s.error:''; } },
+});
+const syncOn=()=>S.sync.state!=='off';
 function upsertLocal(k,o){ const i=S[k].findIndex(x=>x.id===o.id); i<0?S[k].push(o):S[k][i]=o; sv(k,S[k]); }
-function remotePut(k,o){ if(S.fbOn) return MMSync.put(CK(k),o.id,o).catch(e=>toast('ซิงค์ไม่สำเร็จ (บันทึกในเครื่องแล้ว): '+e.message)); }
-function putItem(it){ upsertLocal('items',it); afterChange(); return remotePut('items',it); }
-function removeItem(id){ S.items=S.items.filter(x=>x.id!==id); sv('items',S.items); afterChange(); if(S.fbOn) return MMSync.remove(CK('items'),id).catch(e=>toast('ซิงค์ไม่สำเร็จ: '+e.message)); }
-function putPeriod(p){ upsertLocal('periods',p); afterChange(); return remotePut('periods',p); }
+function putItem(it){ upsertLocal('items',it); afterChange(); syncStore.save(); }
+function removeItem(id){ S.items=S.items.filter(x=>x.id!==id); sv('items',S.items); afterChange(); syncStore.save(); }
+function putPeriod(p){ upsertLocal('periods',p); afterChange(); syncStore.save(); }
 const openPeriod=()=>S.periods.find(p=>p.status==='open')||null;
 
 function applyToItem(it,mv){
@@ -110,20 +117,21 @@ function commitMove(mv){
   const it=S.items.find(x=>x.id===mv.itemId); if(!it) return Promise.resolve(false);
   const op=openPeriod();
   Object.assign(mv,{id:uid(),time:new Date().toISOString(),by:S.user||'-',name:it.name,unit:it.unit,periodId:op?op.id:null});
-  if(S.fbOn){
-    // อ่าน-คำนวณ-เขียนยอดคงเหลือแบบกันชนกัน ถ้าอุปกรณ์อื่นแก้รายการเดียวกันพร้อมกันจะคำนวณใหม่จากค่าล่าสุด
+  const local=()=>{
+    const cur=S.items.find(x=>x.id===mv.itemId)||it, res=applyToItem(cur,mv); upsertLocal('items',res.item);
+    Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); upsertLocal('moves',mv); afterChange(); syncStore.save();
+    return true;
+  };
+  if(S.sync.state==='online' && !syncStore.isDirty('items',it.id)){
+    // ออนไลน์: คำนวณจากค่าล่าสุดบนเซิร์ฟเวอร์แบบกันชนกัน (ต้นทุนเฉลี่ยแม่นยำแม้หลายเครื่องรับของพร้อมกัน)
     let res=null;
-    return MMSync.mutate(CK('items'),it.id,cur=>{ res=applyToItem(cur,mv); return res.item; }).then(saved=>{
-      if(saved===undefined||!res){ toast('บันทึกไม่สำเร็จ กรุณาลองใหม่'); return false; }
-      upsertLocal('items',saved);
-      Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); upsertLocal('moves',mv); afterChange();
-      remotePut('moves',mv);
+    return syncStore.mutate('items',it.id,cur=>{ res=applyToItem(cur,mv); return res.item; }).then(saved=>{
+      if(saved===undefined||!res) return local(); // ยังไม่มีบนเซิร์ฟเวอร์ — บันทึกในเครื่องแล้วซิงก์ตามปกติ
+      Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); upsertLocal('moves',mv); afterChange(); syncStore.save();
       return true;
-    },e=>{ toast('บันทึกไม่สำเร็จ: '+e.message); return false; });
+    },()=>local()); // เน็ตหลุดระหว่างทาง — บันทึกในเครื่อง ยอดส่งเป็นส่วนต่างภายหลัง
   }
-  const res=applyToItem(it,mv); S.items[S.items.indexOf(it)]=res.item; sv('items',S.items);
-  Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); S.moves.push(mv); sv('moves',S.moves); afterChange();
-  return Promise.resolve(true);
+  return Promise.resolve(local());
 }
 
 /* ================= period maths ================= */
@@ -161,8 +169,9 @@ function sumTable(sm){
 /* ================= views ================= */
 const TABS=[['dash','📊 ภาพรวม'],['items','📦 วัตถุดิบ'],['moves','🔄 รับ/เบิก'],['periods','🗓️ งวด ต้น-ปลาย'],['settings','⚙️ ตั้งค่า']];
 function renderHeader(){
-  $('#badge').className='badge'+(S.fbOn?' on':'');
-  $('#badge').textContent=S.fbOn?'🟢 เรียลไทม์'+(S.last?' · '+S.last.toLocaleTimeString('th-TH'):''):'🟡 เครื่องนี้เครื่องเดียว';
+  const st=S.sync.state;
+  $('#badge').className='badge'+(st==='online'?' on':'');
+  $('#badge').textContent=st==='online'?'🟢 เรียลไทม์'+(S.last?' · '+S.last.toLocaleTimeString('th-TH'):''):st==='offline'?'🟡 ออฟไลน์'+(S.sync.pending?' · รอส่ง '+S.sync.pending:''):st==='connecting'?'⏳ กำลังเชื่อมต่อ':'🟡 เครื่องนี้เครื่องเดียว';
   $('#userbtn').textContent='👤 '+(S.user||'ตั้งชื่อผู้ใช้');
   $('#nav').innerHTML=TABS.map(([id,l])=>`<button data-act="tab" data-v="${id}" class="${S.tab===id?'on':''}">${l}</button>`).join('');
 }
@@ -240,12 +249,12 @@ function draftCounts(){ const c={}; S.items.forEach(i=>{const v=(S.draft[i.id]||
 function settingsHtml(){
   return `<div class="card"><h3>👤 ผู้ใช้งาน</h3><div class="note">ชื่อนี้จะถูกบันทึกในทุกรายการรับ/เบิก เพื่อตรวจสอบย้อนหลัง</div><div class="row" style="margin-top:8px"><div class="f"><input id="uname" value="${esc(S.user)}" placeholder="ชื่อของคุณ"></div><button class="p" data-act="saveUser">บันทึก</button></div></div>
   <div class="card"><h3>☁️ Supabase</h3>
-  <div>${S.fbOn?'<span style="color:var(--green)">🟢 เชื่อมต่อแล้ว — ทุกอุปกรณ์ของร้านเห็นข้อมูลสดพร้อมกัน</span>':S.fbBusy?'<span class="note">⏳ กำลังเชื่อมต่อ...</span>':'<span class="note">🔴 ยังไม่เชื่อมต่อ (เก็บในเครื่องนี้เท่านั้น)</span>'}</div>
-  ${S.fbErr?`<div class="err">⚠ ${esc(S.fbErr)}</div>`:''}
-  ${S.fbOn?'<div style="margin-top:8px"><button class="s" data-act="disconnect">ยกเลิกการเชื่อมต่อ</button></div>':`
+  <div id="syncst">${syncLabel()}</div>
+  <div class="err" id="syncerr">${S.sync.error?'⚠ '+esc(S.sync.error):''}</div>
+  ${syncOn()?'<div style="margin-top:8px"><button class="s" data-act="disconnect">หยุดซิงก์ในหน้านี้</button></div>':`
   <div class="row" style="margin-top:8px"><div class="f"><label>รหัสร้าน</label><input id="fbcode" type="password" autocomplete="off" placeholder="รหัสเดียวกับระบบหลังบ้าน"></div></div>
   <button class="p" data-act="connect">☁️ เชื่อมต่อ</button>`}
-  <div class="note" style="margin-top:10px">ใช้รหัสร้านเดียวกับระบบหลังบ้าน/POS — ถ้าเคยเชื่อมต่อจากหน้าอื่นในเบราว์เซอร์นี้แล้วจะเชื่อมต่อให้อัตโนมัติ ใครรู้รหัสร้านจะเข้าถึงข้อมูลได้ เก็บไว้เป็นความลับ<br>ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังว่าง)</div></div>
+  <div class="note" style="margin-top:10px">ใช้รหัสร้านเดียวกับระบบหลังบ้าน/POS — ถ้าเคยเชื่อมต่อจากหน้าอื่นในเบราว์เซอร์นี้แล้วจะเชื่อมต่อให้อัตโนมัติ ใครรู้รหัสร้านจะเข้าถึงข้อมูลได้ เก็บไว้เป็นความลับ<br>เน็ตหลุดก็รับ/เบิกต่อได้ ระบบจะส่งข้อมูลที่ค้างให้เองเมื่อกลับมาออนไลน์<br>ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังว่าง)</div></div>
   <div class="card"><h3>ส่งออก / ล้างข้อมูล</h3><div class="row"><button class="s" data-act="exportMoves">⤓ ส่งออกรายการรับ/เบิกทั้งหมด (CSV)</button><button class="s" data-act="resetLocal" style="color:var(--red)">ล้างข้อมูลในเครื่องนี้</button></div></div>`;
 }
 
@@ -334,27 +343,16 @@ function exportMoves(){ download('stock-moves.csv',[['เวลา','ประ�
 function exportPeriod(id){ const p=S.periods.find(x=>x.id===id); if(!p||!p.summary) return; download('period-'+p.name+'.csv',[['วัตถุดิบ','หน่วย','ต้นงวด','ต้นทุนต้นงวด/หน่วย','รับเข้า','ค่ารับเข้า','เบิกใช้','เสีย','ระบบมีปลายงวด','นับจริง','ต้นทุนปลายงวด/หน่วย','ใช้จริง','ต้นทุนใช้ไป','ส่วนต่างนับ','มูลค่าส่วนต่าง']].concat(p.summary.rows.map(r=>[r.name,r.unit,r.openQty,r.openCost,r.inQty,r.inCost,r.outQty,r.wasteQty,r.sysQty,r.physQty,r.closeCost,r.usedQty,r.cogs,r.varQty,r.varVal])).concat([[],['รวม','','','','','','','','','','','',p.summary.totals.cogs,'',p.summary.totals.varVal]])); }
 
 /* ================= Supabase ================= */
+function syncLabel(){
+  const s=S.sync;
+  if(s.state==='online') return '<span style="color:var(--green)">🟢 เชื่อมต่อแล้ว — ทุกอุปกรณ์ของร้านเห็นข้อมูลสดพร้อมกัน'+(s.pending?' (กำลังส่ง '+s.pending+')':'')+'</span>';
+  if(s.state==='offline') return '<span class="note">🟡 ออฟไลน์/กำลังเชื่อมต่อใหม่ — บันทึกในเครื่องไว้แล้ว'+(s.pending?' รอส่ง '+s.pending+' รายการ':'')+'</span>';
+  if(s.state==='connecting') return '<span class="note">⏳ กำลังเชื่อมต่อ...</span>';
+  return '<span class="note">🔴 ยังไม่เชื่อมต่อ (เก็บในเครื่องนี้เท่านั้น)</span>';
+}
 async function connectFb(code){
-  S.fbErr=''; S.fbBusy=true; renderTab();
-  try{
-    const { member }=await MMSync.connect(code);
-    if(member){
-      MMSync.subscribe(evt=>{
-        const k=COLLS.find(c=>CK(c)===evt.coll); if(!k) return;
-        if(evt.type==='delete') S[k]=S[k].filter(x=>x.id!==evt.id);
-        else if(evt.data){ const i=S[k].findIndex(x=>x.id===evt.id); i<0?S[k].push(evt.data):S[k][i]=evt.data; }
-        sv(k,S[k]); S.last=new Date(); refreshLive();
-      });
-      for(const k of COLLS){
-        const rows=await MMSync.list(CK(k));
-        if(rows.length){ S[k]=rows.map(r=>r.data).filter(Boolean); sv(k,S[k]); }
-        else if(S[k].length) await MMSync.putMany(CK(k),S[k].map(o=>({id:o.id,data:o})));
-      }
-      S.fbOn=true; S.last=new Date();
-      if(code) toast('เชื่อมต่อ Supabase แล้ว');
-    }
-  }catch(e){ S.fbOn=false; S.fbErr='เชื่อมต่อไม่สำเร็จ: '+e.message; }
-  S.fbBusy=false; renderTab();
+  try{ if(await syncStore.start(code)){ S.last=new Date(); if(code) toast('เชื่อมต่อ Supabase แล้ว'); } }
+  catch(e){ toast(e.message); }
 }
 
 /* ================= events ================= */
@@ -376,16 +374,16 @@ document.addEventListener('click',async e=>{
   else if(a==='viewPeriod'){ S.viewPeriod=v; refreshLive(true); }
   else if(a==='exportMoves') exportMoves();
   else if(a==='exportPeriod') exportPeriod(v);
-  else if(a==='connect'){ const code=$('#fbcode').value; if(code.length<6) return toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); connectFb(code); }
-  else if(a==='disconnect'){ await MMSync.disconnect(); S.fbOn=false; renderTab(); toast('ยกเลิกการเชื่อมต่อแล้ว'); }
-  else if(a==='resetLocal'){ if(S.fbOn) return toast('ยกเลิกการเชื่อมต่อ Supabase ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
+  else if(a==='connect'){ const code=$('#fbcode').value; if(!code) return toast('กรุณาใส่รหัสร้าน'); connectFb(code); }
+  else if(a==='disconnect'){ syncStore.stop(); toast('หยุดซิงก์แล้ว — ข้อมูลที่แก้จะถูกส่งขึ้นเมื่อเชื่อมต่อใหม่'); }
+  else if(a==='resetLocal'){ if(syncOn()) return toast('หยุดซิงก์ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้ (ข้อมูลบน Supabase ไม่ถูกลบ)')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); syncStore.forget(); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
 });
 document.addEventListener('input',e=>{
   const t=e.target; if(!t.dataset.d) return;
   const [id,f]=t.dataset.d.split('|'); (S.draft[id]=S.draft[id]||{})[f]=t.value===''?undefined:parseFloat(t.value);
   if(S.wizard==='close') updatePrev();
 });
-window.addEventListener('storage',e=>{ if(S.fbOn||!e.key||!e.key.startsWith(LS)) return; ['items','moves','periods'].forEach(k=>S[k]=ld(k,[])); S.last=new Date(); refreshLive(); }); // เปิดหลายแท็บในเครื่องเดียวกัน
+window.addEventListener('storage',e=>{ if(syncOn()||!e.key||!e.key.startsWith(LS)) return; ['items','moves','periods'].forEach(k=>S[k]=ld(k,[])); S.last=new Date(); refreshLive(); }); // เปิดหลายแท็บในเครื่องเดียวกัน
 
 /* ================= init ================= */
 ['items','moves','periods'].forEach(k=>S[k]=ld(k,[]));
