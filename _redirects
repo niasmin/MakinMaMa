@@ -1,0 +1,4 @@
+# ทางลัด URL สั้น (Cloudflare Pages)
+/pos     /pos-frontend    200
+/stock   /stock-system    200
+/legacy  /makin-mama-pos  200
