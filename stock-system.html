@@ -67,8 +67,59 @@ main.wide{max-width:1500px}
 .rep tr.tot td{font-family:'Kanit';font-weight:700;border-top:2px solid var(--red-s)}
 .rep td.buy{color:var(--green)}
 .warn-c{color:var(--red);font-weight:600}
+.brand{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav button .ic{margin-right:4px}
+.qa{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.qa button{border:none;border-radius:14px;padding:16px 8px;font-family:'Kanit';font-size:15px;font-weight:600;cursor:pointer;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px}
+.qa .ic{font-size:26px}
+.q-in{background:var(--green)}.q-out{background:var(--red)}.q-waste{background:#B3541E}.q-count{background:var(--gold)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch}
+.chips button{white-space:nowrap;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-family:'Kanit';font-size:13px;color:var(--soft);cursor:pointer}
+.chips button.on{background:var(--red);border-color:var(--red);color:#fff}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;max-height:330px;overflow:auto;padding:2px}
+.pick button{text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:9px 10px;cursor:pointer;font-family:'Sarabun';font-size:14px;color:var(--ink);min-height:58px;line-height:1.35}
+.pick button.sel{border-color:var(--green);background:var(--green-s)}
+.pick .q{display:block;font-size:12px;color:var(--soft)}.pick .q.low{color:var(--gold);font-weight:600}
+.line{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.line .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600;margin-bottom:6px}
+.line .bd{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:20px;cursor:pointer;color:var(--red-d);font-family:'Kanit'}
+.step input{width:84px;text-align:center}
+.pm{display:flex;gap:4px;margin-bottom:3px}.pm button{border:1px solid var(--line);background:#fff;border-radius:7px;padding:2px 8px;font-size:11.5px;color:var(--soft);cursor:pointer}.pm button.on{background:var(--gold-s);color:var(--gold);border-color:var(--gold)}
+.after{font-size:12.5px;color:var(--soft);margin-top:6px}.after b{color:var(--ink)}.after.bad{color:var(--red)}
+.bar{position:sticky;bottom:0;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;justify-content:space-between;box-shadow:0 -4px 14px rgba(0,0,0,.06);margin-top:10px;z-index:4}
+.cnt-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.cnt-row .nm{flex:1;min-width:0}.cnt-row input{width:92px;text-align:center}
+.diff{min-width:70px;text-align:right;font-family:'Kanit';font-size:13px;color:var(--soft)}.diff.minus{color:var(--red)}.diff.plus{color:var(--green)}
+.rcard{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.rcard .top{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px;text-align:center}
+.flow div{background:var(--bg);border-radius:8px;padding:5px 2px;font-size:11.5px;color:var(--soft)}.flow b{display:block;font-family:'Kanit';font-size:15px;color:var(--ink)}
+.seg{display:flex;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:none;background:none;border-radius:9px;padding:9px;font-family:'Kanit';font-size:14px;color:var(--soft);cursor:pointer}.seg button.on{background:#fff;color:var(--red-d);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.shop{background:var(--green-s);border:1.5px solid #BFE5CB;border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.shop li{margin:3px 0}
+@media(min-width:701px){.qa{grid-template-columns:repeat(4,1fr)}.mob{display:none!important}}
+@media(max-width:700px){
+  header{padding:8px 12px;gap:8px;flex-wrap:nowrap}
+  header img{width:32px;height:32px}
+  .brand{font-size:15px;min-width:0}
+  .badge{font-size:11px;padding:3px 8px;white-space:nowrap}
+  .userbtn{padding:4px 9px;font-size:11.5px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  nav{position:fixed;bottom:0;left:0;right:0;top:auto;border-top:1px solid var(--line);border-bottom:none;padding:0 0 env(safe-area-inset-bottom);gap:0;box-shadow:0 -2px 12px rgba(0,0,0,.07);overflow:visible}
+  nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;font-size:10.5px;border-bottom:none;border-top:3px solid transparent;min-width:0}
+  nav button.on{border-top-color:var(--red)}
+  nav button .ic{font-size:20px;margin:0}
+  main{padding:12px 12px 96px}
+  input,select,textarea{font-size:16px}
+  .toast{bottom:86px}
+  .desk{display:none!important}
+  .bar{bottom:70px}
+}
 @media print{
-  header,nav,.noprint,.toast{display:none!important}
+  header,nav,.noprint,.toast,.mob{display:none!important}
+  .desk{display:block!important}
   body{background:#fff}
   main{max-width:none;padding:0}
   .card{border:none;padding:0}
@@ -81,7 +132,7 @@ main.wide{max-width:1500px}
 <body>
 <header>
   <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADcANwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDxSiiiviT+owooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKmsbS6vruO0sraa5uJDtSKJC7sfQAcmgTaSuyGivavA37OPjTW1judclg8P2rc7Zh5k5H+4pwP+BEH2r2Hw9+zr8OdJjVtU+3axMv3jcXBjTPsseD+ZNdtLLq9TW1vU+Yx3GOVYRuPPzvtHX8dvxPjSivvmx+HfwysSFt/B+jZHGXtPNPTPVs5rSTw34IQBU8LaKB6DTY/TP92upZRPrJHiT8Q6F/doSfq0v8z89KK/QS48H/D67TE/hHQ3DeumoD0z2Wuf1X4L/CrWEwPDsVnI4yGtJnhI/DO39KmWU1PsyRdLxCwjf7yjJeln+qPhuivpbxt+y+RE914M17zTjK2uoADd9JFGPzX8a8E8XeE/EfhK/wDsXiHSLmwlP3TIvyP7qw+Vh9DXDWwtWj8aPqctz7AZlph6ib7PR/c/0MSiiisD1wooooAKKKKACiiigAooooAKKKKACiiigAooooAKKK+gv2dfggNbjg8W+MbcrpnD2di4wbkdnf0j9B/F9OutChOvPlgedmmaYfLMO69d6dF1b7I5D4OfBXxB49aPUbotpWhZ5u5E+eb1ES9/948fXpX1f4I8E+EfAFiLbQdMRLgriS5cb7iX/efsPYYHoK3Li4WKNbazVIoY12KI1wFAHAGOAPpXm/j3xdcWt6dG0aTbchwlxcLH5siu4ysUSHhpSOSTkKCCRnp7U/q2WUvaz1f3tvsl3Z+R47Nsw4hrezvyw/lWyXeT6/1ZHZeIfFNjpCI+pXyWxkJ8qFVLSycdFUfMx+g/LpXAan8Rry4ujbaPYwxMMlvtCvcTnPH+piJK/wDAmz7ZqXw38Pmmke+8QvKZpuXtknLSP3/fTfec/wCypCj3HNek6Bo1pp8Qis7KGytkYlY4UEYPTnAH6/0rDlzDGq9/Yx+UpfP7K9LP1ONyy7A6Je0l90fl3/FHjmua38THtw1ncXFh1JeTw1MQc+/zYH1FcTP8QfjLZajBawzaVqonnFujpartEjHAVx8pQ/72B3r6xSWN2KpKjMOoDAmuT+I/gey8WWLOiQRaksZRZZEykyd4pQOSh7Hqp5HcHOpl2MpR56OIlO3R218k0lZ+t0dWAz/Bqap4jDQ5X1snb8E/xPG7X4w3sEwsLvxT4Ln1BSVZRaXaW27oV88ZX/gW3b7nrV2D4x+IbHU/7P174c6iSE3+dpjm4SRCOHQ42up65DGvLfGWhyfDkzQL4L065l83dcS6orXJhRuEVACEMZIOJBkk8HaRioreddTsdAv9J8Qal4W0e/vJLG9tYL2T7NY3YUMjqC3ET7lJySVw/JwKijj6lRaOzW66ryd/666o+teS5fUgqkYXhLZ/K+nI+vRNO/daX+kvA3xR8KeJJBb6Zq6wXuSGsbxTFMGA5G0nBOfQn3rr9Ug0rXdOfS9e02C9tJR80c0W9Tx6Hofcc/Svii5uLPxxYwjVNasdP8V2LGI3l5Jsi1GIH5S0oGBKvI3Nwy45yOfQ/h94s+KXhKBU1HTv+Es0KIfO1ndxXksKY6q0bMcezcfSu6jj3LSauu6/VHi5hwpGn+8w9Tlmvsydn6xlon5beeuha+L37Oc1pFLrPgBpLu3A3vpkjbpFH/TJv4x/snn0Jr51mikhmeGaN45EYq6OuGUjqCD0NffXw+8baJ4o00X2h3guYhgTQt8ssLY6Mp6H37+tcn8cvg7pfj6yl1vQVis/ESLuDY2pd8fdk9G9G/A8dMsTl8akfaUPu/yO3JOLq+Eq/VM0vbbme6/xf5797nxfRVjU7G80zUJ9P1C2ltru3cxzQyLhkYdQRVevFasfp0ZKSutgooooGFFFFABRRRQAUUUUAFFFFABRRWh4a0e98Qa/Y6Jp0e+6vZ1hjHYEnqfYdT7ChJt2RM5xhFyk7JHqn7MvwuXxprra7rUBbQdOkGUYcXU3UR/7o4LfgO9fW2rXsEFs6l4YLWFTvdsKigD1OAAP6VnaNpmkeAfAtro9rIlvZWFuTJM3y5wCzyN7k5J+tedWFjqnxK1U3mofabLw7bzkJECAzsMfKoPWQ/xOeE6D5ssPfUlgoRpQjzVJdPzbfRLv92rPxTMsbPPMVPFVZctGGi9PJdZP+tka/ij4i6Pp+mSvozDVb0grAqIwgLkYG6Q4BHfCkk46ZrjfCN74h0zWJ9QuPC0+palOh8oywXQKM7FpXwIeS3yjqAFUDPJr2TR/Buh6XdJd6dpNraToCqzAGSYD/fbJyfr+dbLWIbIaeUkkk8+vH8v844rOpl2JxE41KtTlcXoopWWlvtXu7dbKxxQzbB4enKlSptqW7k9fT3enz16nnmj/ABLurPUZLHxZoEmnMqBy1vC5dFPQtEQWKnB+ZS3IwQKztV8ayeIJLldO1ENYeZtEcfDADoG7gnrg13+v+F9N1eNf7QsoL7yySnmrhlyP4WHK9B0I/pXkvxH8K3Hhu/g1XSBOsEgMSNdOWVJM8QvIedj5+Utnay9SGGfnuKMFmssG1CteC1fSTXnbRpddtN07HblUstxFZWhyze3WN/K+qb/rzmtblopvNtpyssbfejblT+FeveE9Qm1Dw9Be3bIZTuDlRjoSOfevnnRLURW9tc6dH5d9b4h1KGX5GlJGWLdctk7g3OQSM4Ne5+BpJJfhxp1y8awvPbibCnszZB/EEV4nAMKsMZVUZNwUdV53VtPS9n2NeJqMFSi+vNa/XqYnxT8PjxPYCaGKGW5tg6rFK2FnhYDfET23YBBPRgD0zXEfAX4L+HoNLHiXXrT+0jdyGXT7W7XMcMOfkdk6M5HPOQARXo3jCeS38J6xPE2JI7O4ZSG5BEZwf8/yrrdMgjttNtbaEBY4oURAOwCgCv0ZYGjLFOu1raz7Ps7d1/XQ8lZtisLl/wBXpStGT6b2WrXzb/MgfRdGktvsr6Rp7QYx5RtkKY9MYxXk/wASvgPo2oq2s+BXPhvX4fni+zOY4ZWHbA/1Z9149RXoHjXxMdH22loqvduu4luRGPXHc1xMfijXkn87+0pWOclWAK/lXz2c8V5Zgq/1apFya3slp87rX0NcnoZlT/2ihU5b9G3Z+q2a9TwvQ9Y16fxTJY3BOh/EWxcxw3O0Iupkdbe4X7rSMPuv/FwDkkNXvnwY+Jlp4ysWjkQWWtWg239gSc8cF1B5xn15B4PYnzf9oLS7TxHpUHjqCy2ato7x/wBpRwuU+0224AOGHIZTgZ6gN7Vya2l1b+JYfFGgw3mk+KWR9Rhglv1vrbV4hkzCKZRzJjdujOc89DgHrwGYQqxVWhLmg/x/ya28z7DGYPDZrhVKceSe3S0ZLdb3cHdNaPk30V0vXP2lvhXF4w0RvFWg24/t2zi3SIi4N5CB93H99R09Rx6Y+OyCDg8Gv0E+HHiix8TeHbHWtPY/Z7yMEoTkxSDhlPuCCPfj2r5i/as+H6eFfGC+INMgCaVrLM5VRhYbjq6+wb7w/wCBeldOY4dSj7eHz/zDg3OalGq8qxW6vy38t4/5fPyPGKKKK8c/SQooooAKKKKACiiigAooooAK+h/2L/CS3eual4yu48xWC/ZbQkcea4y7D6Jx/wADr54r7w+COgjwt8HNGsigS4ntxdT56mSX5jn6AgfhXoZZS563M9lqfHcb5g8Ll3sov3qj5flu/wDL5mT8d7+VtKs9NimMZvLzDEH+BAPwxvKH09agm8YrptidP8H2lnZ6Tabkj1C9cuHAPzSKmRkE5O92y2c4xisL4nwNrHjS5tb64RNH0+yRZY+hdnJdwT2XCx57nH1rpvBXheGa0h1zW7cFmUPp1hInyW6fwyOp4MhHIB4QY4zk15mIxeNxmZ1cNgWouNlKbV+VW2Xm23933fFRpYXDZfSdfXd26Nvb1aXfRK+7djmIbDW/EUx1CPT9f1uaTn7YzmCMj/YLMihf9wYqSfwbrdoPtMvg6+DDnzra6jlmHvlZN+fpk16+2rRWIMl/cpHDk8sefoB1P+e1W9K1fTdUDfYbpJSoyy8hh+BrT/V3ASqexq4qbqvX47P1SOGWfYuC5oUkoL1+66aX4HkOieMfEuns9vZ6qNQEP37LVYmE0f8Asl+JF+rhq9P8O6xpHjDQXbyY5EdTFe2U4DNE38SOvf2PQjBHWn+KfDGkeI4FW/gK3EY/cXcJ2zwn/Zb09jkHuDXjmu6bqXh3XJI5GjTWbKP7RZX8Q8sXMYPGfbPyuhyBn0IoqVsfkD5sRN1sO7K7+KHr3X9aBCGEzdful7OqtfX7rffuvMxb0P4Z1W++2RSiO1D212mCzxKjsYJPVkZGA3c9vQ4958IadcWfgLSNNuMrcQ6fCjj0YIMj+leRfE3XJPFZi1LQdDvLj/iVSQyRqhNw4k2sh2KCQAN2N5UndlQQcnvNQ+ItpbW1rH4fsP7bBiT959pWBD8qkgMwI4DLuLbVUsFJ3HFb5Hl0MvxmJn9mVrPutXa3le3pY6c3WJxmHopQ9/XmV1o1td9Ou/6M2tTs/tlhdWEwIWeOSFs+jJg/of8AIq54Hvm1HwnptxLxOsAhuFPVZY/kkH4MprD8YePbXRvAB8RJF5NzLIbWG3uR8yXAZldGCnnYUckKedvB5FeafBn4nXEXiq4sPFWpaaYdfl+1WhgmQtay4VSk6pxFv+Xr/ECD1zX0MsVThWUL7r5eR5dLKsVicFUqKPwP5u3xWXpq/Q6DxjJJJ4nvzLnIlKjPoOB+lZNejeOvC82oTf2jpyhrjGJYs4346Ee9ed6rHNpQQ6hBNbl22Rq0bbpG/uqoGWPsM1+IcQZNjcNj6nNBtSk2mk3e7v8Af3R9HlmLpV6EFB6pJW9C7ounpq0l5pcy7oLuxuIZQem1omH88V4p4GtZrHTPBlvcXJia2v5vEtzKelnYpsXJ95DE2B3ynrXvWlWniSHw3qkmkeFtQfVLu0eG1ku3it0iLDAJDPv68/dHSvF4V1zwZNY6d8RtDk0228zT7dbwQia3ntbaSSR4nZSwJbcnA67Bkd6+94cy6tgMBFV005NvXpe1k/u/HuehgcR7WVWEJJ7WSacnpJNpb6c34djf/Zk165svE+q+FNQtms4tTj/tbToXHRXXdgdsFCp/4Ca9q+K3hiPx18MtS0YoGvPK861J6idBuU+ozyv0Jr5X1zU77w74s8HeJ7a1mEOm6ZYC4kEZKLvVmEZPQExNjHpX2ToNzHKqSQsGimiSRGx1BGR+h+tfVYFqdOVKX9Jnj8T054bFUswo6N2f/b0f81Zn5yurI5R1KspwQeoNJXfftCeH18N/FzXLOKPZbzzfa4AOm2Ub8D6MWH4VwNeBUg4TcX0P1zB4mOKoQrw2kk/vQUUUVJ0BRRRQAUUUUAFFFFAF/wAN2P8AafiHTdNAz9ru4oP++nC/1r9D9ZeC0s0Q4jhhQsT2VFX/AAr4L+ECLJ8VPCyN0Oq2/wD6MFfbvxQSWXwjq8cAJlbTbgLjrny2r2sr92lOR+YceP2mNw1FvSz/ABaX6HlmixyeJvENo98o/wCJtcG/uozwFt4lBWP6YESH13GvYJZo4xPd3IdoYgzyBck4A6f5/lXnXw0RLjxNczR4Kw6MDHj0eVSSPwjFd9qhl/sLVDATvELdBnjjP6Zrx+HpzhlNTGvWc+eb9Ve35bHzWdSU8VCitErK3a//AALL5Hm+rXhv9SnvCmzzXLBc52j0qKzvr3TbhL3T9huYjuRXYqr+qkjsRxWZfaillLie1u/Jxkzxxb0H125YfXGKtW88NzAk9vKksTjKujZBH1r8ddauqyxLfvXvfzvc+n9ilTUWvd2/4B7J4T16z8R6NHqNplGzsngYjfBIPvI3uP1GCODWF8XvD51rwrJc28TSXmnh5Y1T70kZXEsY/wB5M4/2lWvP9L1STw3rcWvQkrACseoxjpLBnliP7yZ3A+gYd67rxn47Ol302n6VHbSy28YkuJ52zGgIDdMqMAMpLMyKNwGSTiv27Kc3oZ7l0vaqz+GS87br13X/AAD5GrltfBY6E8Nqt15W3T+/5pnjsNzcKumR2kWmzX9hGEtLmTURDM0LjJvIoZSsLzksQzFiRgHA4rN8G6p4cHiW+8CXl5oPkaffrLp97NdyfZZQm5ghUAiUK7s+1nALdScc1fGegzeINAn02eDTYNQW7il01opw8Xk3LgxhGBOFOSMc4Cjr1rlvhmB4H8ea3p2sXZ0+8hEumi+ik2xJJkhlWUj92xxlXIwCuDwSRx5bjK1ROnWXvQlyt97LR/NWZ99HCUquGqSjK8rXSW97pp3u9FfZK2rPWvEGp2MmpfbNL8RalcaPpm6yWbT3j86edpIxNKkjKQrPLdJllxxGwHUVyPjqz1u61TU7O50q8ln1uEaDaaqiptubiC5XbuG4lVZYSWduSdx6DA1rXVEfVLu/0vxTDaR2FkiaveRxwQefcTOQrhMSrv2xxZdeCyhsjvia9b+Ibojw74XEs19ffZ9Ri1EzxwoLWGBoF2vvKszl3ywbktjAJIHrVHzL+v8Ag+hxYOn7Ga1St1enZ3bsv8XmnsnY7D4e+LfHtjLo/h/w7e23iiynZraGfVNyu4jyJbiMr832ZDhQXyWPA9B7BpCaDpN693qOs299rUg2zXkzDcP9hB0jQf3R+OTzXlnhNF0/Rbm/t7aeylv2NjbxTLtltbG1PlJER/CWdZHb1JqavlM34wlllf6vRhzNbtt2Xkvl1vpseTi8uhjKknH3Fs7JJyfW/TfTRWbV+yXucE0U8QlglSVD0ZGBB/EVS8SaJpniLRLrRdXtUubK6QpIjD8iD2I6g9jXlnhzWbnRr5ZonYwkjzYs8OP8fevYonWWNJEOVdQyn1Br6Xh3iGlndGXu8so7rffqvI+UzDAVMuqxlGXmns7r9T5D+wXFvF4ji1+TzLi5XVLa85whtbKBEt5Ng4UrOqBTjPJFe1fs+ay2t/DPw/dSPmWCP7LIcd4iUGf+AhT+PPavEPFWpyXvjH4h2WheRbX1rqL6k0hgEovo4ZVBgfdkBVb5guMOeD/DXrfwR+yWl54x0ewjSG3staYpDH9yJmiXei+ih1YCurCu1XTbVf1934n2ufU3Uy+81aXuy9FZLb/t5JW6R6WsedftuaasPirQNWVcG5sngY+pjfI/SSvnqvqb9uGJToPhmfHzLdTpn2KKf6V8s1wZjG2Il/XQ+v4Nqupk1G/S6+6TCiiiuI+nCiiigAooooAKKKKAOj+F04tviT4anJwE1W2J/wC/q198+IIxL+7IHzRuvT1GK/OvS7p7HU7W9j+/bzJKv1Vgf6V+itxPFfabaahb/PHNGsqMBn5WXI/mK9vKXeE4+h+X+INNxxGHq91Jfl/mfPv7PPjCxGuaXp2o3sMd5JDLpFxFI+1iyndEwz1ztK/Vq+kbe3SDdtH3iSc/yr4S+JXhPUI/jVqnh7Srcm4ub4y2q7go2v8AvAck4AAJyT0wfSvc/hH8TG8K+HYdP8b+ILLWNNFz9mt9as7hrgQORkQz5AfoCVcAggEZ4rHKOXBwlh38Kbs+13e33nLxNkn1mMMbhJXc0m49bPVNflbfTS9j0/VvAlpczST2V29uzsW2Mu5Rn06EVw/iX4f6ro0kuoaXdeXE2GmMcYeJm7s0Z5B/2lIz3r2DTb6y1KxivtOu4Lu1mXdHNDIHRx7EcVYrlxvB2W4lSlSjySfVbf8AgL0t93lY+Uw2e4zDS5ZO6WjTX9fifOD3WpJfWemX66ci30hhF3l/LT5STvQ8842j5sEkAkVs+CdKsddYafNchjdCO1uHu9MJEs1qu6NJYJuY5Vj5BDMjhSSMjnv/AItR+FNH8H33iHXLQRrZrvjktwFlMh+VVXIwd27aQwIIJyCM14B8OPE/jnWLn/hMkaz0/RfD4k8iOVJpIrmd0KrBHEH/ANYQcfuwAuenaufJsmhkydOVpSk9Wr6r0vZW1Pq6FaeZ4SdekuRR0u7Wct0lo29eXTo7Ox03juxu5fFgl8NLbTR2EsZup72Te+pSRSqytlVCwqrhowWKr8uEBArzn4qeJLrxHqdl4C03T7ixmfUWn1ZJYv3lxqcrEOSqZyqklVAzx+FVZPiRrdu8mlXXgyxkvU1CW9sorqKZnt5ZCNuYy2JSuAE3g4q3Y/8ACL3F2tnp+m+Ida8d6i4M+o32+BdPu2+YskcYLs6sDjPUj8K7ZOEnLk05nr59Pv0t6bn0WEwdTB8kq0OblXutWf8A283e1lvr10itEdza6dZ6BplnpdzCkYRhbzS2tojSxSbT8wREYkggkjej4BOTg1maBZeJtW0GRvEN/b6pdawPs9vG7pFIVKkLAkjsqBgxRgqB9rDkZJFWkNxpOutP4m+xTyXtpLHLeWOiFJCygsfPSMfvFZzGXIOcKQwAY54a78fao+o6f4b8EFLn7PAlhYald2MS3q5J3eW2P3SbmJH8Sjq3ptKcY2v9xy4fD169/Z2b0bk1p1vZ2utbXWjsrns+nXI1fQIvEMaSxreXdyksMhBa3kR9hRiONxChiR1LGlrkfhot78O9Lv4dav7fWvDkqJd6nDGwWW13MqLcwqx3yLkqCdqhhgru79De3Ul3qUH/AAjk9hNp9y4FrJfSNE1yGDFAuAcM+1toI5A3NtBGfz7P+GcZicU8Rh1fm1auk0/nun5ehxtRpVJQi7wV7S6W3s+zXZ7rU0IYpJ5khiUvI7BVUdya9R8X69aeCfAV3rN867NPtBtBP+skAARR7lsCsXRE8L+GPD1v4s1jVYbeGa3SeOa6IQIrqCAq9S2D2yfSvnn4xfFXSPH+six1KLXLXwrbc2f2RUWS4lzjzXD8EAZwoOeevPH0PDGUVMkoTq4hpVJ2sr7JdzyYYOeeYqMIRfsoP3nbful5/wDDmKtxaaZ4Ql1aORzfeItOjuBL8zNc30eo7pIgAOAECkjv8p717d8FLNYPF/xBMeSsush9p5KuyF2U+6l8H6V4v4Zgv9AuL7QrHVWuNNutKm1zQ9RjXY8MscTnzFBzsYhHidfX6A17H+yXp80Hw+XUZy8kup6jLcM7ZJYDCZJ78qeffmvo8Hd1Yq39f8G57XEbUMFVknu1bzu01p05VC1u99jG/bhlxovhiDB+a5nfp6Kg/rXy1X0/+0xqbReFPEvmTbw8ot4Fd+FdpFUbR6jk8elfMB614UcyWYVKlRRsoycfW1tT3eDX7PL1h+sdb9+Zt/gFFFFaH1oUUUUAFFFFABRRXeaN8KvEuqaHbavFPpsMN1B58Ecs7CR1yQOApAzjuRWdSrClHmqSSXduxhXxNLDpOrK1zg6+4P2cPEI8TfBnT42k3XOmqbGYdT+7xs/NCv618aeJfD2r+HbtbbV7Q27uCY23BlcDuGBINe0fs/6n4j+F02oXniLQNTfQNQtUnb7KEleNhyj7N2QCrHP4eld2XYynSmpuS5Xpe+h8txfhIZhl69k05ppx1WvRpd9H+RqftVaXf6Pq2keO9IdoJwsmn3EiqDtyrbcg5HKtIvT071x82maQNSn8DNaTz2mgwLdNaxSiD7fcmINNczzsCI4kXgDrjaByxNez6h4l8K/Fbwdq1lHZ6ta6ZcKVS8vLVUTzsZUx4Yl2Vhk4GAOD1ryHXfCF14a8PeJLg6vd61JqWnxWgn8jEqus8RVcFiSjBNvHI+XjFPHY7CUcSoOory6X/Tz09TyMnxE1ho4fEXhOGnXq1Zt/3U5K107PSz1N/wCHem6vplncan4P8Qat4QkSWNLzQ7yJbyNWdPMVwWK/KyEdRuB4J6V6hpXjfxfbwrHqE+iX75x5gtZYDj1IDsCfpivFLXxVrsk95Ppuia5HfalA1xc2raS00SagqqodSCGMbhTkH7hPGRWh4WT4p31y7a9bx6bbsi+WR5EJU7huyr735XIBxwccHmvGx2KzahXbw1SEafTm/H0McwwKrNzxEE3/ANu39Lu0pWfm9OrHfHOH4i+MoJ7u71PS/wCxrFWmSwtXeIYUZ3sG+82PU8dq80+HHje+8O6xpqX2oX40q0MpihQllhaVdrOEyM5BIOCDgkgg16d420nX1tbZZvE17JplxO8WpLaLD5iQuwWJULRpuJyNzccngcc5fif4b+Itd8PaWNU1DTBr+nmW2nmkmZ2uIBt8rc6qdzKd65PbbyaeEzGXs3XxVeDd94vR26Xb31WiPTy7FUVQWErQiqb0Xdbq9lf7/NbpmxpXjPwtPrFpGuvy3JtYd8V7dTyTPbr50RKh5I1cBQC4Ulj8pAPIzBP470SDWDo76rLqF/EllI2q6bBJK1zfQxFDIrK6mQcjhwQSCe9cz4S1Wy8CWyeGtX0QHW7jUC006W6yyGB4wsRibdyN4bdGRtcMQcGtzW/A974R1TW9U0fxOmh6S4aS+FpCTcW0S5Z44nJBwDkfeXIAzmvWnmdGEITlONpPTz9NTOeEwlKpJSuk17rb0dmru6i/u2fXUn0vW9Ms7PWX1VD4QuLiaN4p7rQXiW5HQuIkUoXUAlUJ273LHOBjzrWNZj8YfF8alp7SWEd5dRxQsYw0jAKEBZRgM745HAJbGcc1eXxrY6W0M2j694j1WzklCX+k62iyQ3MJ+9yHYAkcdAQeQeK7TQ/A+v8AhzWp7a2l0278K3V2rz6dcKrXElu2OCSvyyKh4IcYYZFGIxVKnGPtZqKv1aWv3+vmd1OEME51JK0pJpX000TSTje+ism2uzSuWPirpVxc+G/FDpfXVlNHdRzakJID5d9cBgggEoRAzjOQiBlG08nGazPB2p+LZfDpstT0BtI/s63cx63PYzvPFHLHHAEgh4DysqKqnsNx461xZu/EEfj6ysfEuu+JYGs5v9DIkM9ymeIxFufaC3A3A4Hviux1kXPh6Ga41H/hZ2kw7tstxFrcVwCT/fCgYP41osVSk1Pmsn57mUsK6NGOHbUm9U/klZfzaL+9uk1ZK/Iat4N1J/FeqaXqviPOn6JDHJdajd+YRBGyrsTy+WEmWC+WOhBHQE1qXOta7pOgRanpXi1fFvhuCRLO7sL+3YJFlTsR4XztVgpCuh4I6g1tWPgy58SeFYLLS1uNB8P3F19rnvNVbzL3UpAMBxGgACKGbbk4JYnJ7M1j4f3thoMPhHw0ftbavcie+1C7ZYVUQI7JGEBOBguxOSScDjHPHPH4alW9jzpSfS+vp/w50PGUqnLGtNOzSs0rWXxNu2j3aSlporXuc7qb23h3WbuHRbe6uYPEOjKmiI8u42qXLjehz1IxLHx1JzX2B8M9CXw/4X0vR0VR9hs44nwOr4yx/wC+t3514HYeF4dD8YeHNZ1KGTVdM8PaRHEiWKB5HuQWcko5XhXkYjG77q8V6BpHxu0PW9M1Gy8JaPrd5rEVm8iLJbxRojABVLsZOAGI9TzXp5bjcI+apGpFpdmnbvt/Wh8rxHHEY+lThh4uSWspeeyvfbTV+bZ86ftDa2uvfFfXDDK7WNreGOCISHyw6LsZwucZJDc471wFbOq+HfEdtrSWF/pd5/aN22Y49hd5mJ/hxncfpXoGm/BPUPspfWtbtrG6KZFtBEZ2RvR2yFBHfBavFxGLo0ourUkoxb/4On/APv6FXBZZh6dJSSVltreySvpv6nk1FaXibRbzw/rU2k3/AJfnxANlGyGU/dYexxWbVwnGpFTi7pnq06kakVKDumFFFFWWFFFFABXtX7Pmp6rqKala3t9LNYaZZKltCQu1GeVcHOMnAD457mvFa97/AGfdNks/Al9qUgZf7SvlWIHukKkE/wDfUhH/AAE15mcOEcDVlNXsnv3ei+ep4ufuH1T3lrdW+/8Ayucb+0Rd+f4u0nT05NtYySsPeVwB/wCijXuGuzJpttczzKzLZ22ZFXqfLjGQPfg15v4/8B32t+ONO16wlW4jklt7W4hYgeUiyHLA9x8xz3GPy6H466sbLwLr9xDKUlvCbaEjrmV9nH/AWJ/CvlqzpYjAYTC03duVn5Pr/wClHyVaa+r04xd5e+36tq34IztL+KGm6/4h0Lw/4e064mN3LDCC8YggtITgsAo6lVzwoxnvTPjnrs+iaBp8lg3lzzatA0eecCJjNz7ZjUfjXF/s5WCyeNri/wBhK6dp0siHsrPiJf0kP5V03j3SG8Z/Fbw/4W3mOysbSTUNQkz9yJnCkj/awjAe7CvTqYChSzOhGG65pyk3d6bXb7NGmMwdHC4lUW246X/FySSS+yehaJqN7quhWuqXVpLYfbFEsdvJMHbYQCH46A54zg45xXHaX41v9V+Lw8H2Vnarp9tKy3dyxZpGCReZJtwQFx93nPNdT431uPRPDmqa4lsgjsbVnht14UBVxHGPbhRXl37NdlNLq3iDXbpvNnS22PKe81xJuYj6hZPzrzcuwuFrSxGMcL04J8qflr+XTbXyMKdL2kKk2rKK+5ydor5fprudH8edUk07wKsUEhjuLy+gijYHBXa3mkj8I/1rrvCd1fah4R0fU9UkWS+vrc3MzKgUfM7beB/shT+NeV/tCXD3viDw7oFspeYLJcFR/ecrHGPx+evWPGEF7Z+Hb/T9DtpLm8tNPNpZQwjLO6RbECj6gVnLDxjk1GFveqT0+en6RFUUYUVUa1bevlFJW+9v7jxrwFLJ41+Pa60QHtLe6Nwuei21tnYf+BEA/V6679oPVjaeBzpwk/f6tcrbkYyTGPnkP5Lj/gVWPgv4Dv8AwVZX1xrD2q3tzbR2sUEUgkaJAwZyzD5QSVUYBPfNcJ+0LfNceNNP07I8uysDLj/blcj+UQ/OvYreyxGZ4fDUmnCkr6d1svwj951qlDEYilh4O8Vyx8n9qb+ep53X0N8FdT1XWvCN7qOr3st263iWsBcKNiJFk9Bkk71yST0FfPNfTHwr06TSvhnotvMCst15l8ynsJCAn5oin/gVdnELhHL6jklfRL1bW3yufQcROHsIJrXm0+5t/keZ61KdV/aQsoYskW9/YWv/AHyVdvy3n8q9e8X6zYaJo93q+p25uLKN186MRh9yu4XlTwR83IPauN0nwPfWfxotPFEcy3Wnz3Et7LISAYWERKr7jIUAj/8AXV/aJ1DyPCVjpSOQ2oXyB1HeOMGQ/huCfnXi4j2WLeBoUndLfurKN/NPRnzVS1SNKjB3bSXzlJnQ+FviHbeL/G50vTrK6nto4Jri7vbj92CqKQoRevLlBk4GDwK5T46eJNR0bXPDkWlXbW9xCJ7tmUA/wiIAg8EEPJxUn7NtkE0/xDqzIdzeRZo3bBLSP/6An51y3xAin8W/Gz+xbUMWVrbTY/Yn53b6DzOf92u2jl1CGawpU435Ytyb1bctNfvTOhYOjSzD2N7wi1e9tkub0t0PbDctpfhC2vr6V5ZbbSIri5lfG53EAd2OAB1z2ryz9l6KUpr1zJ1+xQK/+88ob/2U1614zsotb07VdLS5a3ivoZLZJRyyqylQQD1OO1cp8HfC9/4W0nXYNQWMNPeQJC6nIlREc7h7fOPxrzcLi8PGjjXFpOV7LbTVK3/gRyYeUY4epfRtRSX/AG8m/usjQ8VeOtF8IalDDqUdwLia1kkhlhgDsFDKrIp6qWyOnBA5NWPAPiBvFPh241o6c9lA161vaLI4Z2REBZmxwMlwMAnGOteJ/G7UPt/xIuYVctHp1tFbKOwdh5j/AI/Mn5V7P4X8nw38KdIklVgltpbX8wxyS+6U/wDjpUfgKdfLqVDKY1ZJuckkrvRczvoul0VVwsKeFhiG3eTenSyvrtfoup4D8Q786n8QdfvN25VuzbR+yxAR/wDoQY/jWHUdu8ssQmn/ANdMTLJ/vuSzfqTUlfa0qSo0401tFJfcrH3OW0XRwlOD3sr+r1f4hRRRWh2hRRRQBZ0o2A1GA6oty1lvHnC3ZRIV77SwIz9a+htL8e+BU0OGOy1O30+w062EcdvOSjoi8nr99iSSSM5JNfOFFefmOXxx9NUpyaV76W19dDzMxyxY1J8zTW3Vfcd/8L/iG+lapeLqyyDTdUu5bog5LWzyOWz64wcEe2frc+PfiWy1W40rR9L1GC7gj3XdwIJQ6hvuxhsDg8scZ/DpXmlFTLK8O8XHFpWkvu2sn8v8jn/sOip05RduW1/O23o+563+z5qmj6da65Fe6jbW15dNAsSSvs3RrvLEE8ddvGc0af8AEvRLD4l+ItQEbXmn3tvb2UV7CM7ViyzBQfvIXbqP7vGRXkh5GDQOBgU6uW06tedabfvR5Ldl1FiMjp4jEutUlo+nnay1/S2/3Hq/xr8ZaRrHhOx0zRdTiuDe3StcxqWDrEgL4YdstsHNbvwhu9B8M/DaS91LWdPtpr65a4nElwoaONAUjBGc5JLnHuK8LrtL34cX9vBdXT3tq0Vtp63ofafnbBJhH+2ArE//AF65/wCzKNHBPBxk0pbvruv+Ajlr5VSo0XR9rZyle7XRaJb9Hr0Ldx4n0TWPjlpviCSSQaNbXFpH50kZXcsbli2Dzt3N3HQE16f4v+I3hnQI2Ml8uoXrqHS0s2EkjZ6EkcKOc5Yj8a8MtPDl1c+FbnX1mjVIHIEBB3yICodx2wpdAfr7VKvhSdPCkfiWa5ihspUbadpy0ocoIx6k7S2egAqcVlOGxEaVOcny09Ld9Fu/l0/AmrlFBxhBVbcr5Xpu229Oz18z2b4dePbLxBos8ur3Gn6dqK3b7bfzdoWAquwbmPznO/JAHbivNPjnbr/wm66nDcW01vd2kaIY5lY70LbgQDnoVNYWneGJb690K0+1wx/2wpZGZSREA7J83r90nioPEHhqfQYLea48nfPLLGAi9oyuGB7qwYEH0ow2VUMPjHXoytdW5baff6q/UvD5ZSw+LhKlU2vo7t9U9fv9BPCMnh+LXIZPE0F7Ppy8ulq4Vie2SR931xz6V7l4r+JPhg+FdR1Sz1S1eb7OyW1omUkL7SscaofmAHA9gK8a8OeEb7XdFm1Gzmi3RXUduISDubcRlh7LuBPtSt4TmXxpN4cOoW+yAF5L3B8pYwm8yY64wR+dbZhgqOOcY1Ju0Xey2frobZlhKGNm/wB5aUU/Oy0vp93r8jrfgx47i0zT7bwzrs4SCJQlrcseI+OUY+meh7dOnTA+M+vQa742Edlex3dlp0AjjeJ9yeY+C+CBgnCqDyf6VQ0Twjfal4g1HRDPFb3NjHIzGQHDsrBQo92JAH1qLxD4WvtGOkxyOk0+pQiRYkB3RuTjy2/2hkfnThgMNHHPFL4mvld9fuBYDBxxcJwla2vL300fl3PVPgzr3h7S/h3JBd6vZ21wl5NdXSTSbCibEVTz1GFPTNc/8NPF3g2y8Xa34j1H7ampX15cGzupVzDHA52qwUDcrlBjJ4APY1wni7QJfD+piyluIbtHjDpNEDsbkqwGfRlYfhWRVLARnUq11Np1ElpbRJW0J/sWliKk63O3Gaf4u7+XS1ttGesfG7xjp11b6LYaBqkNxcpdi+eS2k3eSqKwTJHAJZhgH+6a6jwl8StF1LQpLnV7y1069to83CzOER8D7yexPYZI9+K+f6K5JZBhpYWOGd/dd79dd/8AIccgpqi4OXvN3vbySta+2ncfPdzalfXOpXTsZr2Zp3Z+vzHjPA6DHYdK96+Lvi7w6Ph3f22l6xbXDXtmLGxjhfc7jYE+71AC8kkDFeBUmBnOBn1r0MXgoYn2absoSTt6bL0NcZksMRRp0lKygrbbp2v89BcAcDpRRRXae2FFFFABRRRQAUUUUAFFFFABRRRQAV0E/jHX5lkSS8UpI0rsnljbmSIRNx/ujHt1rn6KlxUt0ROlCfxK5t2virXLbTU02C8KWKQSQG32jy3V87iw7n5up54HpUUPiHVI9J/soSo1n5DQeU0YIKs+/P8AvBjkHqKyaKXJHsT9Xpfyrv8APualrr2pW0+mzxSoH0xStqSgO0FmY59eWPWo9T1rUdS07T7C8n82DT0aO2BUZVWIJBPU9BjPSs+inyRvew/Y0781lf8A4f8Azf3mtpPiLVtKtRbWFz5KBpW4UZzJH5bc/wC7+XWnxeJ9Zhvbi9gu/Juri3S2eaNQriNAoABHThFBI61jUUuSL6CdCk224rU2W8T6w2oXWoG5H2q7jjjml2Dc2xkYH65jUk9/xp0/irWbjUrXUZ7hJLm1uJLmJ2jBxI7bicd+eQO1YlFHs49hfV6X8q+75fkaWsa5qmsQ28ep3b3Rt93lyScuAxBILdSMjp2yfWs2iiqSSVkaQhGCtFWQUUUUygooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//9k=" alt="">
-  <div class="brand">มากิน มาม่า · ระบบสต๊อก</div>
+  <div class="brand">มากิน มาม่า · สต๊อก</div>
   <span class="badge" id="badge"></span>
   <button class="userbtn" id="userbtn" data-act="setUser"></button>
 </header>
@@ -106,7 +157,7 @@ const dd=iso=>new Date(iso).toLocaleDateString('th-TH',{day:'numeric',month:'sho
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
 const TL={in:'รับเข้า',out:'เบิกใช้',waste:'ของเสีย',adjust:'ปรับยอด/นับ'};
 
-const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),sync:{state:'off',pending:0,error:''},last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in'};
+const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),sync:{state:'off',pending:0,error:''},last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in',batch:[],pickQ:'',pickCat:'',itemQ:'',itemCat:'',showForm:false,cntQ:'',cntCat:'',repMode:'month',repFilter:'',countDraft:ld('countDraft',{})};
 
 const SEED_CAT=n=>/มาม่า/.test(n)?['เส้น/มาม่า','ชั้นของแห้ง']:/ไข่|ผัก|เต้าหู้/.test(n)?['วัตถุดิบสด','ตู้เย็น']:/เนื้อ|ไก่|หมึก|กุ้ง|ปูอัด|ลูกชิ้น|ไส้กรอก|โบโลน่า|แฮม|ชีส|นักเกต|เฟรนช์/.test(n)?['เนื้อสัตว์/ของแช่แข็ง','ตู้แช่แข็ง']:/ซอส|สาหร่าย/.test(n)?['ซอส/เครื่องปรุง','ชั้นของแห้ง']:/น้ำ|ไอศกรีม/.test(n)?['เครื่องดื่ม/ของหวาน','ตู้เย็น']:['อื่นๆ','ชั้นของแห้ง'];
 const SEED=[['มาม่าไทย','ซอง'],['มาม่าบิ๊กแพ็ค','ซอง'],['มาม่าเกาหลี','ซอง'],['ไข่ไก่','ฟอง'],['ผักสด','ชุด'],['ลูกชิ้นไก่','ลูก'],['ลูกชิ้นปลา','ลูก'],['ลูกชิ้นเนื้อ','ลูก'],['ไส้กรอกหนังกรอบ','ชิ้น'],['เต้าหู้','ชิ้น'],['เนื้อวัว','กรัม'],['ไก่สับ','กรัม'],['สาหร่ายวากาเมะ','ห่อ'],['โบโลน่า','ชิ้น'],['แฮมไก่','ชิ้น'],['ปูอัด','ชิ้น'],['ชีสแผ่น','แผ่น'],['ไก่ฉีก','กรัม'],['หนังไก่กรอบ','ชิ้น'],['ปลาหมึก','กรัม'],['กุ้ง','ตัว'],['นักเกต','ชิ้น'],['ชีสบอล','ชิ้น'],['เฟรนช์ฟราย','กรัม'],['ไก่ป๊อป','ชิ้น'],['ไก่ไร้กระดูก','ชิ้น'],['ซอสเกาหลี','มล.'],['ซอสเทอริยากิ','มล.'],['ข้าวสวย','ถ้วย'],['ไอศกรีมเนสเล่','ถ้วย'],['น้ำดื่ม','ขวด'],['น้ำแข็ง','กก.']];
@@ -187,34 +238,33 @@ function sumTable(sm){
 }
 
 /* ================= views ================= */
-const TABS=[['dash','📊 ภาพรวม'],['items','📦 วัตถุดิบ'],['moves','🔄 รับ/เบิก'],['report','📋 รายงานสิ้นเดือน'],['periods','🗓️ งวด ต้น-ปลาย'],['settings','⚙️ ตั้งค่า']];
+const TABS=[['dash','🏠','หน้าหลัก'],['moves','🔄','รับ/เบิก'],['count','📝','นับสต๊อก'],['report','📋','รายงาน'],['items','📦','วัตถุดิบ'],['settings','⚙️','ตั้งค่า']];
 function renderHeader(){
   const st=S.sync.state;
   $('#badge').className='badge'+(st==='online'?' on':'');
   $('#badge').textContent=st==='online'?'🟢 เรียลไทม์'+(S.last?' · '+S.last.toLocaleTimeString('th-TH'):''):st==='offline'?'🟡 ออฟไลน์'+(S.sync.pending?' · รอส่ง '+S.sync.pending:''):st==='connecting'?'⏳ กำลังเชื่อมต่อ':'🟡 เครื่องนี้เครื่องเดียว';
-  $('#userbtn').textContent='👤 '+(S.user||'ตั้งชื่อผู้ใช้');
-  $('#nav').innerHTML=TABS.map(([id,l])=>`<button data-act="tab" data-v="${id}" class="${S.tab===id?'on':''}">${l}</button>`).join('');
+  $('#userbtn').textContent='👤 '+(S.user||'ใส่ชื่อ');
+  $('#nav').innerHTML=TABS.map(([id,ic,l])=>`<button data-act="tab" data-v="${id}" class="${S.tab===id?'on':''}"><span class="ic">${ic}</span><span>${l}</span></button>`).join('');
 }
+function needOrder(){ return sortedItems().filter(i=>i.qty<=i.low).map(i=>({it:i,qty:i.max?r4(Math.max(i.max-i.qty,0)):null})); }
+function expiring(){ return sortedItems().filter(i=>expState(i)); }
 function dashHtml(){
-  const val=S.items.reduce((s,i)=>s+i.qty*i.avgCost,0), low=S.items.filter(i=>i.qty<=i.low), op=openPeriod();
-  let per='';
-  if(op){
-    const ov=Object.values(op.opening).reduce((s,o)=>s+o.qty*o.cost,0);
-    const buy=S.moves.filter(m=>m.periodId===op.id&&m.type==='in').reduce((s,m)=>s+m.value,0);
-    per=`<div class="card"><h3>🗓️ งวดปัจจุบัน: ${esc(op.name)} <span class="note">(เริ่ม ${dd(op.startTime)})</span></h3>
-    <div class="grid" style="margin:0"><div class="stat"><div class="n">${baht(ov)}</div><div class="l">มูลค่าต้นงวด</div></div>
-    <div class="stat"><div class="n">${baht(buy)}</div><div class="l">ซื้อเข้าสะสม</div></div>
-    <div class="stat"><div class="n">${baht(val)}</div><div class="l">มูลค่าสต๊อกตอนนี้</div></div>
-    <div class="stat"><div class="n" style="color:var(--green)">${baht(ov+buy-val)}</div><div class="l">ต้นทุนใช้ไปสะสม (ประมาณการสด)</div></div></div>
-    <div class="note" style="margin-top:8px">ประมาณจากยอดในระบบ = ต้นงวด + ซื้อเข้า − สต๊อกคงเหลือ ตัวเลขจริงจะได้ตอน "ปิดงวด" หลังนับสต๊อก</div></div>`;
-  } else per=`<div class="banner">ยังไม่ได้เปิดงวด — ไปที่แท็บ "งวด ต้น-ปลาย" เพื่อนับสต๊อกต้นงวด แล้วระบบจะเริ่มสะสมต้นทุนจริงให้</div>`;
-  const recent=S.moves.slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,8);
-  return `<div class="grid"><div class="stat"><div class="n">${baht(val)}</div><div class="l">มูลค่าสต๊อกรวม</div></div>
-  <div class="stat"><div class="n">${S.items.length}</div><div class="l">รายการวัตถุดิบ</div></div>
-  <div class="stat ${low.length?'warn':''}"><div class="n">${low.length}</div><div class="l">ใกล้หมด/หมด</div></div></div>
-  ${per}
-  <div class="card"><h3>⚠️ ใกล้หมด</h3>${low.length?low.map(i=>`<div class="item-row"><span class="nm">${esc(i.name)}</span><span class="low">เหลือ ${fmt(i.qty)} ${esc(i.unit)}</span><span class="note">แจ้งเตือนที่ ≤ ${fmt(i.low)}</span></div>`).join(''):'<div class="empty">ไม่มีรายการใกล้หมด</div>'}</div>
-  <div class="card"><h3>🔴 ความเคลื่อนไหวล่าสุด (สด)</h3>${movesTable(recent)}</div>`;
+  const val=S.items.reduce((s,i)=>s+i.qty*i.avgCost,0), need=needOrder(), ex=expiring();
+  const ym=ymOf(new Date()), R=monthReport(ym);
+  const recent=S.moves.slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,6);
+  if(!S.items.length) return `<div class="card" style="text-align:center"><h3>เริ่มต้นใช้งาน</h3><div class="note" style="margin-bottom:12px">เพิ่มรายการวัตถุดิบของร้านก่อน แล้วบันทึกรับของเข้าครั้งแรก</div><button class="p" data-act="seed">เพิ่มวัตถุดิบตั้งต้นของร้าน (${SEED.length} รายการ)</button><div class="note" style="margin-top:8px">หรือไปที่แท็บ 📦 วัตถุดิบ เพื่อเพิ่มเอง</div></div>`;
+  return `<div class="qa">
+    <button class="q-in" data-act="quick" data-v="in"><span class="ic">📥</span>รับของเข้า</button>
+    <button class="q-out" data-act="quick" data-v="out"><span class="ic">📤</span>เบิกใช้</button>
+    <button class="q-waste" data-act="quick" data-v="waste"><span class="ic">🗑️</span>ของเสีย</button>
+    <button class="q-count" data-act="tab" data-v="count"><span class="ic">📝</span>นับสต๊อก</button></div>
+  ${need.length?`<div class="card" style="border-color:var(--gold)"><h3>🛒 ต้องสั่งซื้อ ${need.length} รายการ</h3>${need.slice(0,5).map(n=>`<div class="item-row"><span class="nm">${esc(n.it.name)}</span><span class="low">เหลือ ${fmt(n.it.qty)} ${esc(n.it.unit)}</span>${n.qty?`<span class="note">ควรสั่ง ${fmt(n.qty)}</span>`:''}</div>`).join('')}
+    <div class="row" style="margin:8px 0 0"><button class="s" data-act="shareOrder">📋 คัดลอก/แชร์รายการสั่งซื้อ</button>${need.length>5?`<button class="s" data-act="tab" data-v="report">ดูทั้งหมด</button>`:''}</div></div>`:''}
+  ${ex.length?`<div class="card"><h3>⏰ ใกล้หมดอายุ / หมดอายุ</h3>${ex.map(i=>`<div class="item-row"><span class="nm">${esc(i.name)}</span><span class="warn-c">${expState(i)}</span><span class="note">${dd(i.exp)}</span></div>`).join('')}</div>`:''}
+  <div class="grid"><div class="stat"><div class="n">${baht(val)}</div><div class="l">มูลค่าสต๊อกตอนนี้</div></div>
+  <div class="stat"><div class="n">${baht(R.totals.buyVal)}</div><div class="l">ซื้อเข้าเดือนนี้</div></div>
+  <div class="stat"><div class="n">${S.items.length}</div><div class="l">รายการวัตถุดิบ</div></div></div>
+  <div class="card"><h3>🔴 ความเคลื่อนไหวล่าสุด</h3>${movesTable(recent)}</div>`;
 }
 function movesTable(list){
   if(!list.length) return '<div class="empty">ยังไม่มีรายการ</div>';
@@ -223,13 +273,15 @@ function movesTable(list){
 }
 function itemsLive(){
   if(!S.items.length) return `<div class="empty">ยังไม่มีวัตถุดิบ<br><br><button class="p" data-act="seed">เพิ่มรายการวัตถุดิบตั้งต้นของร้าน (${SEED.length} รายการ)</button></div>`;
-  return sortedItems().map(i=>{ const ex=expState(i);
+  const q=S.itemQ.trim().toLowerCase();
+  const list=sortedItems().filter(i=>(!S.itemCat||(i.cat||'อื่นๆ')===S.itemCat)&&(!q||(i.name+' '+(i.code||'')+' '+(i.brand||'')).toLowerCase().includes(q)));
+  if(!list.length) return '<div class="empty">ไม่พบวัตถุดิบที่ค้นหา</div>';
+  return list.map(i=>{ const ex=expState(i);
     return `<div class="item-row"><span class="code">${esc(i.code||'-')}</span><span class="nm">${esc(i.name)}${i.brand?` <span class="note">(${esc(i.brand)})</span>`:''}<br><span class="note">${esc(i.cat||'อื่นๆ')} · ${esc(i.loc||'-')}${i.exp?` · หมดอายุ ${dd(i.exp)}`:''}</span></span>
     <span class="${i.qty<=i.low?'low':''}">${fmt(i.qty)} ${esc(i.unit)}</span><span class="note">ขั้นต่ำ ${fmt(i.low)}${i.max?' / สูงสุด '+fmt(i.max):''}</span><span class="note">ต้นทุนเฉลี่ย ${baht(i.avgCost)}/${esc(i.unit)}</span><span class="note">มูลค่า ${baht(i.qty*i.avgCost)}</span>
     ${ex?`<span class="warn-c">${ex}</span>`:''}
     <button class="s" data-act="editItem" data-v="${i.id}">✏️ แก้ไข</button><button class="x" data-act="delItem" data-v="${i.id}" title="ลบ">✕</button></div>`; }).join('');
 }
-function itemOptions(){ return '<option value="">เลือกวัตถุดิบ</option>'+S.items.slice().sort((a,b)=>a.name.localeCompare(b.name,'th')).map(i=>`<option value="${i.id}">${esc(i.name)} (เหลือ ${fmt(i.qty)} ${esc(i.unit)})</option>`).join(''); }
 function movesLive(){ return movesTable(S.moves.slice().sort((a,b)=>b.time.localeCompare(a.time)).slice(0,80)); }
 function periodsHtml(){
   const op=openPeriod(), closed=S.periods.filter(p=>p.status==='closed').sort((a,b)=>b.endTime.localeCompare(a.endTime));
@@ -280,30 +332,96 @@ function settingsHtml(){
   <div class="card"><h3>ส่งออก / ล้างข้อมูล</h3><div class="row"><button class="s" data-act="exportMoves">⤓ ส่งออกรายการรับ/เบิกทั้งหมด (CSV)</button><button class="s" data-act="resetLocal" style="color:var(--red)">ล้างข้อมูลในเครื่องนี้</button></div></div>`;
 }
 
+function catList(){ return [...new Set(sortedItems().map(i=>i.cat||'อื่นๆ'))]; }
+function chipsHtml(act,cur,extra){ return `<div class="chips">${(extra||[]).concat([['','ทั้งหมด']]).concat(catList().map(c=>[c,c])).map(([v,l])=>`<button data-act="${act}" data-v="${esc(v)}" class="${cur===v?'on':''}">${esc(l)}</button>`).join('')}</div>`; }
 function renderTab(){
   renderHeader();
   const v=$('#view');
   v.classList.toggle('wide',S.tab==='report');
   if(S.tab==='dash') v.innerHTML='<div id="live"></div>';
-  else if(S.tab==='items') v.innerHTML=itemFormHtml()+`<div class="card" id="live"></div>`;
-  else if(S.tab==='report') v.innerHTML=`<div id="live"></div>`;
-  else if(S.tab==='moves') v.innerHTML=`<div class="card"><h3>บันทึกการเคลื่อนไหว</h3><div class="types">${['in','out','waste','adjust'].map(t=>`<button data-act="mtype" data-v="${t}" class="${S.moveType===t?'on':''}">${TL[t]}</button>`).join('')}</div>
-    <div class="row"><div class="f" style="flex:2"><label>วัตถุดิบ</label><select id="mv_item">${itemOptions()}</select></div><div class="f"><label id="mv_ql">${S.moveType==='adjust'?'นับได้จริง':'จำนวน'}</label><input id="mv_qty" type="number" min="0" step="any"></div>
-    ${S.moveType==='in'?'<div class="f"><label>ราคารวมที่จ่าย (฿)</label><input id="mv_cost" type="number" min="0" step="any"></div>':''}</div>
-    <div class="row"><div class="f"><label>หมายเหตุ</label><input id="mv_note" placeholder="${S.moveType==='waste'?'เช่น หมดอายุ ทำหก':'ไม่บังคับ'}"></div></div>
-    <button class="p" data-act="submitMove">บันทึก</button></div><div class="card"><h3>รายการล่าสุด</h3><div id="live"></div></div>`;
-  else if(S.tab==='periods') v.innerHTML=`<div id="live"></div>`;
+  else if(S.tab==='items') v.innerHTML=(S.showForm||S.editId?itemFormHtml():`<div class="row"><button class="p" data-act="showForm" style="flex:1">+ เพิ่มวัตถุดิบ</button></div>`)
+    +`<div class="card"><div class="row"><div class="f"><input id="item_q" placeholder="🔍 ค้นหาชื่อ / รหัส / ยี่ห้อ" value="${esc(S.itemQ)}"></div></div><div id="itemchips">${chipsHtml('itemCat',S.itemCat)}</div><div id="live"></div></div>`;
+  else if(S.tab==='moves') v.innerHTML=`<div class="card"><div class="seg">${['in','out','waste'].map(t=>`<button data-act="mtype" data-v="${t}" class="${S.moveType===t?'on':''}">${{in:'📥 รับเข้า',out:'📤 เบิกใช้',waste:'🗑️ ของเสีย'}[t]}</button>`).join('')}</div>
+    <div class="note" style="margin-bottom:8px">${S.moveType==='in'?'แตะวัตถุดิบที่ซื้อมา (เลือกได้หลายรายการในใบเดียว) แล้วใส่จำนวนกับราคา':S.moveType==='out'?'แตะวัตถุดิบที่เบิกไปใช้ แล้วใส่จำนวน':'แตะวัตถุดิบที่เสีย/ทิ้ง แล้วใส่จำนวนและสาเหตุ'}</div>
+    <div class="row"><div class="f"><input id="pick_q" placeholder="🔍 ค้นหาวัตถุดิบ" value="${esc(S.pickQ)}"></div></div>
+    <div id="pickchips">${chipsHtml('pickCat',S.pickCat)}</div><div id="pick" class="pick"></div></div>
+    <div class="card"><h3>${S.moveType==='in'?'🧾 ใบรับของ':S.moveType==='out'?'🧾 ใบเบิก':'🧾 รายการของเสีย'} <span class="note" id="bcount"></span></h3><div id="batch"></div>
+    <div class="row"><div class="f"><label>หมายเหตุ${S.moveType==='in'?' / ร้านที่ซื้อ':''}</label><input id="mv_note" placeholder="${S.moveType==='waste'?'เช่น หมดอายุ ทำหก':S.moveType==='in'?'เช่น แม็คโคร เลขที่บิล':'ไม่บังคับ'}"></div></div>
+    <div class="bar"><span id="bsum" class="note"></span><button class="g" data-act="saveBatch" id="bsave">บันทึก</button></div></div>
+    <div class="card"><h3>รายการล่าสุด</h3><div id="live"></div></div>`;
+  else if(S.tab==='count') v.innerHTML=`<div class="card"><h3>📝 นับสต๊อก</h3><div class="note" style="margin-bottom:8px">นับของจริงแล้วกรอกเฉพาะรายการที่นับ (ช่องว่าง = ไม่เปลี่ยน) ระบบจะบันทึกส่วนต่างเป็น "ปรับยอด/นับ" ให้ · ที่กรอกไว้จะจำไว้แม้ปิดหน้า</div>
+    <div class="row"><div class="f"><input id="cnt_q" placeholder="🔍 ค้นหาวัตถุดิบ" value="${esc(S.cntQ)}"></div></div><div id="cntchips">${chipsHtml('cntCat',S.cntCat)}</div><div id="live"></div>
+    <div class="bar"><span id="csum" class="note" style="flex:1;min-width:0"></span><button class="s" data-act="clearCount" style="white-space:nowrap">ล้าง</button><button class="g" data-act="saveCount" style="white-space:nowrap">บันทึกผลนับ</button></div></div>`;
+  else if(S.tab==='report') v.innerHTML=`<div class="seg noprint">${[['month','📋 รายงานสิ้นเดือน'],['period','🗓️ งวดบัญชี (ต้นทุนจริง)']].map(([m,l])=>`<button data-act="repMode" data-v="${m}" class="${S.repMode===m?'on':''}">${l}</button>`).join('')}</div><div id="live"></div>`;
   else v.innerHTML=settingsHtml();
   refreshLive(true);
 }
+function renderPick(){
+  const el=$('#pick'); if(!el) return;
+  const q=S.pickQ.trim().toLowerCase(), sel=new Set(S.batch.map(l=>l.itemId));
+  const list=sortedItems().filter(i=>(!S.pickCat||(i.cat||'อื่นๆ')===S.pickCat)&&(!q||(i.name+' '+(i.code||'')).toLowerCase().includes(q)));
+  el.innerHTML=list.length?list.map(i=>`<button data-act="pickItem" data-v="${i.id}" class="${sel.has(i.id)?'sel':''}">${sel.has(i.id)?'✅ ':''}${esc(i.name)}<span class="q ${i.qty<=i.low?'low':''}">เหลือ ${fmt(i.qty)} ${esc(i.unit)}</span></button>`).join('')
+    :`<div class="empty" style="grid-column:1/-1">${S.items.length?'ไม่พบวัตถุดิบ':'ยังไม่มีวัตถุดิบ — ไปเพิ่มที่แท็บ 📦 วัตถุดิบ'}</div>`;
+}
+function lineAfter(l){
+  const it=S.items.find(i=>i.id===l.itemId); if(!it) return {txt:'',bad:false};
+  const q=Number(l.qty)||0, t=S.moveType;
+  if(t==='in'){
+    const p=Number(l.price)||0, total=l.pm==='total'?p:p*q, unit=q>0?(l.pm==='total'?p/q:p):0;
+    return {txt:`รวม <b>${baht(total)}</b> (${baht(unit)}/${esc(it.unit)}) · คงเหลือหลังรับ <b>${fmt(it.qty+q)} ${esc(it.unit)}</b>`,bad:false,total};
+  }
+  const left=it.qty-q;
+  return left<-1e-9?{txt:`⚠️ มากกว่าที่มีอยู่ (${fmt(it.qty)} ${esc(it.unit)})`,bad:true}:{txt:`คงเหลือหลัง${t==='out'?'เบิก':'ทิ้ง'} <b>${fmt(left)} ${esc(it.unit)}</b>`,bad:false};
+}
+function renderBatch(){
+  const el=$('#batch'); if(!el) return;
+  el.innerHTML=S.batch.length?S.batch.map((l,i)=>{ const it=S.items.find(x=>x.id===l.itemId); if(!it) return ''; const a=lineAfter(l);
+    return `<div class="line"><div class="hd"><span>${esc(it.name)} <span class="note">(${esc(it.unit)})</span></span><button class="x" data-act="rmLine" data-v="${i}" title="เอาออก">✕</button></div>
+    <div class="bd"><div><label class="note">จำนวน</label><div class="step"><button data-act="stepQ" data-v="${i}|-1">−</button><input type="number" inputmode="decimal" min="0" step="any" data-b="${i}|qty" value="${l.qty??''}"><button data-act="stepQ" data-v="${i}|1">+</button></div></div>
+    ${S.moveType==='in'?`<div><div class="pm"><button data-act="pmode" data-v="${i}|unit" class="${l.pm!=='total'?'on':''}">ราคา/หน่วย</button><button data-act="pmode" data-v="${i}|total" class="${l.pm==='total'?'on':''}">ราคารวม</button></div><input type="number" inputmode="decimal" min="0" step="any" style="width:120px" data-b="${i}|price" value="${l.price??''}" placeholder="฿"></div>`:''}</div>
+    <div class="after ${a.bad?'bad':''}" id="after-${i}">${a.txt}</div></div>`; }).join('')
+    :`<div class="empty">ยังไม่ได้เลือกวัตถุดิบ — แตะรายการด้านบน</div>`;
+  updateBatchBar();
+}
+function updateBatchBar(){
+  const n=S.batch.length, c=$('#bcount'), sum=$('#bsum'), btn=$('#bsave');
+  if(c) c.textContent=n?n+' รายการ':'';
+  if(sum) sum.innerHTML=S.moveType==='in'&&n?'ยอดรวม <b>'+baht(S.batch.reduce((t,l)=>t+(lineAfter(l).total||0),0))+'</b>':n?n+' รายการ':'';
+  if(btn){ btn.textContent=n?'บันทึก '+n+' รายการ':'บันทึก'; btn.disabled=!n; btn.style.opacity=n?1:.5; }
+}
+function countRows(){
+  const q=S.cntQ.trim().toLowerCase();
+  const list=sortedItems().filter(i=>(!S.cntCat||(i.cat||'อื่นๆ')===S.cntCat)&&(!q||(i.name+' '+(i.code||'')).toLowerCase().includes(q)));
+  if(!list.length) return '<div class="empty">ไม่พบวัตถุดิบ</div>';
+  let cur=null;
+  return list.map(i=>{ const c=i.cat||'อื่นๆ', head=c!==cur?(cur=c,`<div class="note" style="margin-top:10px;font-family:Kanit;color:var(--gold)">${esc(c)}</div>`):'';
+    const v=S.countDraft[i.id];
+    return head+`<div class="cnt-row"><div class="nm"><b>${esc(i.name)}</b><br><span class="note">ในระบบ ${fmt(i.qty)} ${esc(i.unit)}</span></div><input type="number" inputmode="decimal" min="0" step="any" data-c="${i.id}" value="${v??''}" placeholder="นับได้"><span class="diff" id="diff-${i.id}">${diffTxt(i)}</span></div>`; }).join('');
+}
+function diffTxt(i){ const v=S.countDraft[i.id]; if(v==null) return ''; const d=r4(v-i.qty); return d===0?'✓ ตรง':`<span class="${d<0?'minus':'plus'}">${d>0?'+':''}${fmt(d)}</span>`; }
+function updateCountBar(){
+  const el=$('#csum'); if(!el) return;
+  let n=0,val=0; Object.entries(S.countDraft).forEach(([id,v])=>{ const i=S.items.find(x=>x.id===id); if(i&&v!=null&&Math.abs(v-i.qty)>1e-9){ n++; val+=(v-i.qty)*i.avgCost; } });
+  el.innerHTML=n?`เปลี่ยน <b>${n}</b> รายการ · ส่วนต่าง <b class="${val<0?'warn-c':''}">${baht(val)}</b>`:'ยังไม่มีรายการที่ต่างจากระบบ';
+}
 function refreshLive(force){
   renderHeader();
+  // กำลังพิมพ์อยู่: ไม่วาดใหม่ (กันช่องที่พิมพ์หาย) แล้ววาดทีหลังเมื่อออกจากช่อง
+  const ae=document.activeElement;
+  if(!force&&ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)&&ae.closest('#view')&&!(S.tab==='report'&&ae.id==='rep_ym')){ S.deferred=true; return; }
+  S.deferred=false;
+  if(S.tab==='moves'){ renderPick(); renderBatch(); }
+  if(S.tab==='count') updateCountBar();
   const L=$('#live'); if(!L) return;
   if(S.tab==='dash') L.innerHTML=dashHtml();
   else if(S.tab==='items') L.innerHTML=itemsLive();
-  else if(S.tab==='moves'){ L.innerHTML=movesLive(); const s=$('#mv_item'); if(s){const cur=s.value; s.innerHTML=itemOptions(); s.value=cur;} }
-  else if(S.tab==='report') L.innerHTML=reportHtml();
-  else if(S.tab==='periods'){ if(S.wizard){ if(force){L.innerHTML=wizardHtml(); if(S.wizard==='close') updatePrev();} } else L.innerHTML=periodsHtml(); }
+  else if(S.tab==='moves') L.innerHTML=movesLive();
+  else if(S.tab==='count') L.innerHTML=countRows();
+  else if(S.tab==='report'){
+    if(S.repMode==='month') L.innerHTML=reportHtml();
+    else if(S.wizard){ if(force||!L.querySelector('table')){L.innerHTML=wizardHtml(); if(S.wizard==='close') updatePrev();} }
+    else L.innerHTML=periodsHtml();
+  }
 }
 function afterChange(){ S.last=new Date(); refreshLive(); }
 
@@ -329,7 +447,7 @@ function itemFormHtml(){
   <div class="row"><div class="f" style="max-width:110px"><label>รหัสสินค้า</label><input id="in_code" value="${e?v('code'):nextCode()}"></div><div class="f" style="flex:2"><label>รายการสินค้า</label><input id="in_name" value="${v('name')}"></div><div class="f"><label>ยี่ห้อ/รุ่น</label><input id="in_brand" value="${v('brand')}"></div></div>
   <div class="row"><div class="f"><label>หมวด</label><input id="in_cat" list="dl_cat" value="${e?v('cat'):'อื่นๆ'}"></div><div class="f"><label>ที่เก็บ (คลัง)</label><input id="in_loc" list="dl_loc" value="${v('loc')}"></div><div class="f"><label>วันหมดอายุ (ล็อตปัจจุบัน)</label><input id="in_exp" type="date" value="${v('exp')}"></div></div>
   <div class="row"><div class="f" style="max-width:110px"><label>หน่วยนับ</label><input id="in_unit" placeholder="ซอง/แพ็ค/ลัง" value="${v('unit')}"></div><div class="f" style="max-width:130px"><label>ขั้นต่ำสุด (แจ้งเตือน ≤)</label><input id="in_low" type="number" min="0" step="any" value="${e?v('low'):10}"></div><div class="f" style="max-width:130px"><label>ขั้นสูงสุด</label><input id="in_max" type="number" min="0" step="any" value="${v('max')}"></div></div>
-  <button class="p" data-act="addItem">${e?'บันทึกการแก้ไข':'+ เพิ่ม'}</button>${e?' <button class="s" data-act="cancelEdit">ยกเลิก</button>':''}
+  <button class="p" data-act="addItem">${e?'บันทึกการแก้ไข':'+ เพิ่ม'}</button> <button class="s" data-act="cancelEdit">ยกเลิก</button>
   <div class="note" style="margin-top:6px">จำนวนและต้นทุนให้ใส่ผ่านการ "รับเข้า" หรือ "นับต้นงวด" · ขั้นสูงสุดใช้คำนวณจำนวนที่ควรสั่งในรายงานสิ้นเดือน</div></div>`;
 }
 async function addItem(){
@@ -343,15 +461,15 @@ async function addItem(){
   const fields={code,name,unit,low,max,brand,cat,loc,exp};
   if(S.editId){
     const it=S.items.find(i=>i.id===S.editId); if(!it){ S.editId=null; return renderTab(); }
-    putItem({...it,...fields}); S.editId=null; renderTab(); toast('บันทึกการแก้ไขแล้ว');
+    putItem({...it,...fields}); S.editId=null; S.showForm=false; renderTab(); toast('บันทึกการแก้ไขแล้ว');
   } else {
     putItem({id:uid(),...fields,qty:0,avgCost:0,createdAt:new Date().toISOString()});
-    renderTab(); toast('เพิ่มวัตถุดิบแล้ว');
+    S.showForm=false; renderTab(); toast('เพิ่มวัตถุดิบแล้ว — บันทึกรับของเข้าได้ที่แท็บ 🔄 รับ/เบิก');
   }
 }
 async function seed(){
   for(const [n,u] of SEED){ if(!S.items.some(i=>i.name===n)){ const [cat,loc]=SEED_CAT(n), bulk=(u==='กรัม'||u==='มล.'); putItem({id:uid(),code:nextCode(),name:n,unit:u,qty:0,avgCost:0,low:bulk?500:10,max:bulk?5000:100,brand:'',cat,loc,exp:'',createdAt:new Date().toISOString()}); } }
-  toast('เพิ่มรายการตั้งต้นแล้ว');
+  refreshLive(true); toast('เพิ่มรายการตั้งต้นแล้ว — ปรับขั้นต่ำ/สูงสุดได้ที่แท็บ 📦 วัตถุดิบ');
 }
 
 /* ================= รายงานสิ้นเดือน (แบบใบตรวจเช็คสต๊อก) ================= */
@@ -399,13 +517,23 @@ function monthReport(ym){
   Object.keys(T).forEach(k=>T[k]=r2(T[k]));
   return {ym,rows,rounds,totals:T,below:rows.filter(r=>r.below).length};
 }
+function shopLi(r){ return `<li>${esc(r.it.name)} — ${r.toOrder?'สั่ง <b>'+fmt(r.toOrder)+' '+esc(r.it.unit)+'</b> ':''}<span class="note">(เหลือ ${fmt(r.closeQty)})</span></li>`; }
 function buyCell(b){ return b?`${fmt(b.qty)} @ ${baht(b.unit)}<br><span class="note">${new Date(b.time).toLocaleDateString('th-TH',{day:'numeric',month:'short'})}</span>`:''; }
 function reportHtml(){
   const months=reportMonths();
   if(!S.reportYm||!months.includes(S.reportYm)) S.reportYm=months[0];
-  const R=monthReport(S.reportYm);
+  const R0=monthReport(S.reportYm), f=S.repFilter;
+  const R={...R0,rows:R0.rows.filter(r=>!f||(f==='__need'?r.below:f==='__move'?(r.buyQty||r.outQty||r.wasteQty||r.adjQty):(r.it.cat||'อื่นๆ')===f))};
   const cats=[...new Set(R.rows.map(r=>r.it.cat||'อื่นๆ'))];
   const cols=18+R.rounds;
+  const need=R0.rows.filter(r=>r.below);
+  const cards=R.rows.length?R.rows.map(r=>{ const ex=expState(r.it);
+    return `<div class="rcard"><div class="top"><span>${esc(r.it.name)} <span class="code">${esc(r.it.code||'')}</span></span><span>${baht(r.value)}</span></div>
+    <div class="note">${esc(r.it.cat||'อื่นๆ')} · ราคาต่อหน่วย ${baht(r.unit)}/${esc(r.it.unit)}${r.buys.length?' · ซื้อ '+r.buys.length+' รอบ ('+baht(r.buyVal)+')':''}</div>
+    <div class="flow"><div>ยกมา<b>${fmt(r.openQty)}</b></div><div>ซื้อ<b style="color:var(--green)">${r.buyQty?'+'+fmt(r.buyQty):'0'}</b></div><div>เบิก/เสีย<b style="color:var(--red)">${r.outQty+r.wasteQty?'−'+fmt(r.outQty+r.wasteQty):'0'}</b></div><div>คงเหลือ<b class="${r.below?'low':''}">${fmt(r.closeQty)}</b></div></div>
+    ${r.adjQty?`<div class="note" style="margin-top:4px">ปรับยอดจากการนับ ${r.adjQty>0?'+':''}${fmt(r.adjQty)}</div>`:''}
+    ${r.below?`<div class="warn-c" style="margin-top:4px">🛒 ควรสั่ง${r.toOrder?' '+fmt(r.toOrder)+' '+esc(r.it.unit):''}</div>`:''}${ex?`<div class="warn-c">${ex}</div>`:''}</div>`; }).join('')
+    :'<div class="empty">ไม่มีรายการตามตัวกรอง</div>';
   const body=R.rows.length?cats.map(c=>{
     const rs=R.rows.filter(r=>(r.it.cat||'อื่นๆ')===c), sub=r2(rs.reduce((t,r)=>t+r.value,0));
     return `<tr class="cat"><td colspan="${cols-2}">${esc(c)}</td><td class="num">${baht(sub)}</td><td></td></tr>`+rs.map(r=>{ const ex=expState(r.it);
@@ -415,17 +543,21 @@ function reportHtml(){
       <td class="num">${fmt(r.afterBuy)}</td><td class="num">${fmt(r.outQty)}</td><td class="num">${r.wasteQty?fmt(r.wasteQty):''}</td><td class="num">${r.adjQty?(r.adjQty>0?'+':'')+fmt(r.adjQty):''}</td>
       <td class="num ${r.below?'low':''}">${fmt(r.closeQty)}</td><td class="num">${baht(r.unit)}</td><td class="num">${baht(r.value)}</td>
       <td>${r.below?`<span class="warn-c">ควรสั่ง${r.toOrder?' '+fmt(r.toOrder)+' '+esc(r.it.unit):''}</span>`:r.above?'<span class="low">เกินขั้นสูงสุด</span>':''}${ex?(r.below||r.above?'<br>':'')+`<span class="warn-c">${ex}</span>`:''}</td></tr>`; }).join('');
-  }).join('')+`<tr class="tot"><td colspan="${cols-2}">รวมมูลค่าคงเหลือทั้งหมด</td><td class="num">${baht(R.totals.value)}</td><td></td></tr>`
+  }).join('')+`<tr class="tot"><td colspan="${cols-2}">รวมมูลค่าคงเหลือ${f?' (ตามตัวกรอง)':'ทั้งหมด'}</td><td class="num">${baht(r2(R.rows.reduce((t,r)=>t+r.value,0)))}</td><td></td></tr>`
   :`<tr><td colspan="${cols}" class="empty">ยังไม่มีวัตถุดิบ</td></tr>`;
   return `<div class="card noprint"><div class="row" style="align-items:flex-end">
     <div class="f" style="max-width:200px"><label>ประจำเดือน</label><select id="rep_ym">${months.map(m=>`<option value="${m}" ${m===S.reportYm?'selected':''}>${ymLabel(m,true)}</option>`).join('')}</select></div>
     <button class="g" data-act="exportXlsx" data-v="one">⤓ Excel เดือนนี้</button><button class="s" data-act="exportXlsx" data-v="all">⤓ Excel ทุกเดือน (แยกชีต)</button><button class="s" data-act="print">🖨️ พิมพ์</button></div>
-    <div class="note">ยกมา/คงเหลือคำนวณจากรายการรับ/เบิกที่บันทึกไว้ · ราคาต่อหน่วยเป็นต้นทุนถัวเฉลี่ย ณ สิ้นเดือน · เดือนปัจจุบันแสดงยอดถึงตอนนี้</div></div>
-  <div class="grid noprint"><div class="stat"><div class="n">${baht(R.totals.openVal)}</div><div class="l">มูลค่ายกมา</div></div>
-    <div class="stat"><div class="n">${baht(R.totals.buyVal)}</div><div class="l">ซื้อเข้าในเดือน</div></div>
-    <div class="stat"><div class="n">${baht(R.totals.value)}</div><div class="l">มูลค่าคงเหลือสิ้นเดือน</div></div>
-    <div class="stat ${R.below?'warn':''}"><div class="n">${R.below}</div><div class="l">รายการถึงขั้นต่ำ ควรสั่งซื้อ</div></div></div>
-  <div class="card"><h3 style="text-align:center">รายการตรวจเช็คสต๊อกวัตถุดิบ ณ วันสิ้นเดือน ประจำเดือน ${ymLabel(R.ym,true)} — มากิน มาม่า</h3>
+    <div class="note">ไม่ต้องกรอกเอง — ยกมา/คงเหลือคำนวณจากรายการรับ/เบิก/นับที่บันทึกไว้ · ราคาต่อหน่วยเป็นต้นทุนถัวเฉลี่ย ณ สิ้นเดือน · เดือนปัจจุบันแสดงยอดถึงตอนนี้ · ก่อนปิดเดือนแนะนำให้ <a href="#" data-act="tab" data-v="count">📝 นับสต๊อก</a> ก่อน</div></div>
+  <div class="grid noprint"><div class="stat"><div class="n">${baht(R0.totals.openVal)}</div><div class="l">มูลค่ายกมา</div></div>
+    <div class="stat"><div class="n">${baht(R0.totals.buyVal)}</div><div class="l">ซื้อเข้าในเดือน</div></div>
+    <div class="stat"><div class="n">${baht(R0.totals.value)}</div><div class="l">มูลค่าคงเหลือสิ้นเดือน</div></div>
+    <div class="stat ${R0.below?'warn':''}"><div class="n">${R0.below}</div><div class="l">รายการถึงขั้นต่ำ ควรสั่งซื้อ</div></div></div>
+  ${need.length?`<div class="shop noprint"><b>🛒 รายการที่ควรสั่งซื้อ (${need.length})</b><ul style="margin:6px 0 4px;padding-left:20px">${need.slice(0,5).map(shopLi).join('')}</ul>${need.length>5?`<details><summary class="note" style="cursor:pointer">ดูอีก ${need.length-5} รายการ</summary><ul style="margin:4px 0;padding-left:20px">${need.slice(5).map(shopLi).join('')}</ul></details>`:''}<div style="margin-top:8px"><button class="s" data-act="shareOrder">📋 คัดลอก/แชร์ส่งไลน์</button></div></div>`:''}
+
+  <div class="noprint">${chipsHtml('repFilter',S.repFilter,[['__need','🛒 ต้องสั่ง'],['__move','มีความเคลื่อนไหว']])}</div>
+  <div class="mob">${cards}<div class="card"><div class="top" style="display:flex;justify-content:space-between;font-family:Kanit;font-weight:700"><span>รวมมูลค่าคงเหลือ${f?' (ตามตัวกรอง)':''}</span><span>${baht(r2(R.rows.reduce((t,r)=>t+r.value,0)))}</span></div><div class="note">ดูแบบตารางเต็มได้ในไฟล์ Excel หรือเปิดบนคอมพิวเตอร์</div></div></div>
+  <div class="card desk"><h3 style="text-align:center">รายการตรวจเช็คสต๊อกวัตถุดิบ ณ วันสิ้นเดือน ประจำเดือน ${ymLabel(R.ym,true)} — มากิน มาม่า</h3>
   <div class="scroll"><table class="rep"><thead><tr><th rowspan="2">รหัสสินค้า</th><th rowspan="2">รายการสินค้า</th><th rowspan="2">ยี่ห้อ/รุ่น</th><th rowspan="2">ที่เก็บ</th><th rowspan="2">วันหมดอายุ</th><th colspan="2">กำหนดจำนวน</th><th rowspan="2">หน่วยนับ</th><th rowspan="2">ยอดยกมา</th><th rowspan="2">จำนวนสั่งซื้อ</th><th colspan="${R.rounds}">รายการที่สั่งซื้อ / ราคาต่อหน่วย</th><th rowspan="2">รวมยอดหลังสั่งซื้อ</th><th rowspan="2">รวมยอดเบิก</th><th rowspan="2">ของเสีย</th><th rowspan="2">ปรับยอด (นับ)</th><th rowspan="2">รวมคงเหลือ</th><th rowspan="2">ราคาต่อหน่วย</th><th rowspan="2">รวมมูลค่า</th><th rowspan="2">หมายเหตุ</th></tr>
   <tr><th>ขั้นต่ำสุด</th><th>ขั้นสูงสุด</th>${Array.from({length:R.rounds},(_,i)=>`<th>รอบที่ ${i+1}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div></div>`;
 }
@@ -471,17 +603,50 @@ async function exportXlsx(all){
   });
   X.writeFile(wb,'สต๊อกมากินมาม่า_'+(all?'ทุกเดือน':ymLabel(S.reportYm).replace(/[. ]/g,''))+'.xlsx');
 }
-async function submitMove(){
+function pickItem(id){
+  const i=S.batch.findIndex(l=>l.itemId===id);
+  if(i>=0) S.batch.splice(i,1); else S.batch.push({itemId:id,qty:S.moveType==='in'?'':1,price:'',pm:'unit'});
+  renderPick(); renderBatch();
+  if(i<0){ const inp=document.querySelector(`[data-b="${S.batch.length-1}|qty"]`); if(inp&&S.moveType==='in') inp.focus(); }
+}
+async function saveBatch(){
+  if(!S.batch.length) return toast('เลือกวัตถุดิบก่อน');
   if(!needUser()) return;
-  const itemId=$('#mv_item').value, q=posn($('#mv_qty').value), note=$('#mv_note').value.trim(), t=S.moveType;
-  const it=S.items.find(i=>i.id===itemId);
-  if(!it) return toast('เลือกวัตถุดิบ');
-  if(q===null||q<0||(t!=='adjust'&&q<=0)) return toast(t==='adjust'?'ใส่จำนวนที่นับได้ (ไม่ติดลบ)':'ใส่จำนวนที่มากกว่า 0');
-  let mv={type:t,itemId,qty:q,note};
-  if(t==='in'){ const c=posn(($('#mv_cost')||{}).value); if(c===null||c<0) return toast('ใส่ราคารวมที่จ่าย (ใส่ 0 ได้ถ้าของแถม)'); mv.totalCost=c; }
-  if(t==='out'||t==='waste'){ if(q>it.qty+1e-9) return toast('จำนวนมากกว่าสต๊อกที่มี ('+fmt(it.qty)+' '+it.unit+')'); }
-  if(t==='adjust'){ mv={type:'adjust',itemId,setTo:q,note:note||'นับ/ปรับยอด'}; }
-  if(await commitMove(mv)){ $('#mv_qty').value=''; $('#mv_note').value=''; if($('#mv_cost')) $('#mv_cost').value=''; toast('บันทึกแล้ว'); }
+  const t=S.moveType, note=($('#mv_note')||{}).value?.trim()||'';
+  for(const l of S.batch){
+    const it=S.items.find(i=>i.id===l.itemId); if(!it) continue;
+    const q=posn(l.qty); if(q===null||q<=0) return toast('ใส่จำนวนของ '+it.name);
+    if(t==='in'){ const p=posn(l.price); if(p===null||p<0) return toast('ใส่ราคาของ '+it.name+' (ใส่ 0 ได้ถ้าของแถม)'); }
+    else if(q>it.qty+1e-9) return toast(it.name+' มีไม่พอ (เหลือ '+fmt(it.qty)+' '+it.unit+')');
+  }
+  let n=0;
+  for(const l of S.batch){
+    const q=posn(l.qty), mv={type:t,itemId:l.itemId,qty:q,note};
+    if(t==='in'){ const p=posn(l.price); mv.totalCost=r2(l.pm==='total'?p:p*q); }
+    if(await commitMove(mv)) n++; else break;
+  }
+  S.batch=S.batch.slice(n); if($('#mv_note')&&!S.batch.length) $('#mv_note').value='';
+  renderPick(); renderBatch();
+  toast(n?'บันทึกแล้ว '+n+' รายการ':'บันทึกไม่สำเร็จ');
+}
+async function saveCount(){
+  const ch=Object.entries(S.countDraft).map(([id,v])=>[S.items.find(i=>i.id===id),v]).filter(([i,v])=>i&&v!=null&&!isNaN(v)&&Math.abs(v-i.qty)>1e-9);
+  const same=Object.keys(S.countDraft).length-ch.length;
+  if(!ch.length){ if(same){ S.countDraft={}; sv('countDraft',{}); refreshLive(true); return toast('ยอดตรงกับระบบทั้งหมด ✓'); } return toast('ยังไม่ได้กรอกยอดที่นับ'); }
+  if(ch.some(([,v])=>v<0)) return toast('ยอดนับติดลบไม่ได้');
+  if(!needUser()) return;
+  if(!confirm('บันทึกผลนับ '+ch.length+' รายการ? ระบบจะปรับยอดให้ตรงกับที่นับ')) return;
+  const note='นับสต๊อก '+new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+  let n=0;
+  for(const [i,v] of ch){ if(await commitMove({type:'adjust',itemId:i.id,setTo:v,note})){ delete S.countDraft[i.id]; n++; } else break; }
+  if(n===ch.length) S.countDraft={};
+  sv('countDraft',S.countDraft); refreshLive(true); toast('ปรับยอดแล้ว '+n+' รายการ');
+}
+async function shareOrder(){
+  const need=needOrder(); if(!need.length) return toast('ไม่มีรายการที่ต้องสั่ง');
+  const txt='🛒 รายการสั่งซื้อ มากิน มาม่า ('+new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'})+')\n'+need.map((n,k)=>(k+1)+'. '+n.it.name+(n.qty?' — '+fmt(n.qty)+' '+n.it.unit:'')+' (เหลือ '+fmt(n.it.qty)+')').join('\n');
+  try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(txt); toast('คัดลอกแล้ว — วางในไลน์ได้เลย'); }catch(e){ prompt('คัดลอกข้อความนี้',txt); }
 }
 function startWizard(kind){
   S.wizard=kind; S.draft={};
@@ -535,17 +700,31 @@ async function connectFb(code){
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
-  if(a==='tab'){ if(S.wizard&&!confirm('กำลังกรอกข้อมูลนับสต๊อกอยู่ ออกจากหน้านี้และทิ้งข้อมูลที่กรอก?')) return; S.wizard=null; S.tab=v; renderTab(); }
+  if(a==='tab'){ e.preventDefault(); if(S.wizard&&!confirm('กำลังกรอกข้อมูลนับสต๊อกอยู่ ออกจากหน้านี้และทิ้งข้อมูลที่กรอก?')) return; S.wizard=null; S.tab=v; renderTab(); window.scrollTo(0,0); }
+  else if(a==='quick'){ if(S.moveType!==v) S.batch=[]; S.moveType=v; S.tab='moves'; renderTab(); window.scrollTo(0,0); }
+  else if(a==='pickItem') pickItem(v);
+  else if(a==='rmLine'){ S.batch.splice(+v,1); renderPick(); renderBatch(); }
+  else if(a==='stepQ'){ const [i,d]=v.split('|'); const l=S.batch[+i]; if(l){ l.qty=Math.max(0,r4((Number(l.qty)||0)+Number(d))); renderBatch(); } }
+  else if(a==='pmode'){ const [i,m]=v.split('|'); if(S.batch[+i]){ S.batch[+i].pm=m; renderBatch(); } }
+  else if(a==='saveBatch') saveBatch();
+  else if(a==='pickCat'){ S.pickCat=v; $('#pickchips').innerHTML=chipsHtml('pickCat',v); renderPick(); }
+  else if(a==='itemCat'){ S.itemCat=v; $('#itemchips').innerHTML=chipsHtml('itemCat',v); refreshLive(true); }
+  else if(a==='cntCat'){ S.cntCat=v; $('#cntchips').innerHTML=chipsHtml('cntCat',v); refreshLive(true); }
+  else if(a==='repFilter'){ S.repFilter=v; refreshLive(true); }
+  else if(a==='repMode'){ S.repMode=v; renderTab(); }
+  else if(a==='saveCount') saveCount();
+  else if(a==='clearCount'){ if(Object.keys(S.countDraft).length&&!confirm('ล้างยอดที่กรอกไว้ทั้งหมด?')) return; S.countDraft={}; sv('countDraft',{}); refreshLive(true); }
+  else if(a==='shareOrder') shareOrder();
+  else if(a==='showForm'){ S.showForm=true; renderTab(); setTimeout(()=>{ const n=$('#in_name'); if(n) n.focus(); },50); }
   else if(a==='setUser'||a==='saveUser'){ if(a==='setUser'){S.tab='settings';renderTab();return} const n=$('#uname').value.trim(); S.user=n; sv('user',n); renderHeader(); toast('บันทึกชื่อแล้ว'); }
   else if(a==='addItem') addItem();
   else if(a==='editItem'){ S.editId=v; renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
-  else if(a==='cancelEdit'){ S.editId=null; renderTab(); }
+  else if(a==='cancelEdit'){ S.editId=null; S.showForm=false; renderTab(); }
   else if(a==='exportXlsx') exportXlsx(v==='all');
   else if(a==='print') window.print();
   else if(a==='seed') seed();
   else if(a==='delItem'){ const it=S.items.find(i=>i.id===v); if(it&&confirm('ลบ "'+it.name+'"? ประวัติรับ/เบิกเดิมยังอยู่ แต่จะไม่นับในสรุปงวดต่อไป')) removeItem(v); }
-  else if(a==='mtype'){ S.moveType=v; renderTab(); }
-  else if(a==='submitMove') submitMove();
+  else if(a==='mtype'){ if(v!==S.moveType&&S.batch.length&&!confirm('เปลี่ยนประเภทจะล้างรายการที่เลือกไว้ ต่อไหม?')) return; if(v!==S.moveType) S.batch=[]; S.moveType=v; renderTab(); }
   else if(a==='wizOpen') startWizard('open');
   else if(a==='wizClose') startWizard('close');
   else if(a==='wizCancel'){ S.wizard=null; S.draft={}; refreshLive(true); }
@@ -558,9 +737,17 @@ document.addEventListener('click',async e=>{
   else if(a==='disconnect'){ syncStore.stop(); toast('หยุดซิงก์แล้ว — ข้อมูลที่แก้จะถูกส่งขึ้นเมื่อเชื่อมต่อใหม่'); }
   else if(a==='resetLocal'){ if(syncOn()) return toast('หยุดซิงก์ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้ (ข้อมูลบน Supabase ไม่ถูกลบ)')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); syncStore.forget(); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
 });
+document.addEventListener('focusout',()=>{ setTimeout(()=>{ if(S.deferred){ const ae=document.activeElement; if(!(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)&&ae.closest('#view'))) refreshLive(); } },0); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.c){ const all=[...document.querySelectorAll('[data-c]')], k=all.indexOf(e.target); if(all[k+1]){ e.preventDefault(); all[k+1].focus(); } } });
 document.addEventListener('change',e=>{ if(e.target.id==='rep_ym'){ S.reportYm=e.target.value; refreshLive(); } });
 document.addEventListener('input',e=>{
-  const t=e.target; if(!t.dataset.d) return;
+  const t=e.target;
+  if(t.id==='pick_q'){ S.pickQ=t.value; renderPick(); return; }
+  if(t.id==='item_q'){ S.itemQ=t.value; const L=$('#live'); if(L) L.innerHTML=itemsLive(); return; }
+  if(t.id==='cnt_q'){ S.cntQ=t.value; const L=$('#live'); if(L) L.innerHTML=countRows(); return; }
+  if(t.dataset.b){ const [i,f]=t.dataset.b.split('|'); const l=S.batch[+i]; if(!l) return; l[f]=t.value; const a=lineAfter(l), el=$('#after-'+i); if(el){ el.innerHTML=a.txt; el.className='after'+(a.bad?' bad':''); } updateBatchBar(); return; }
+  if(t.dataset.c){ const id=t.dataset.c; if(t.value==='') delete S.countDraft[id]; else S.countDraft[id]=parseFloat(t.value); sv('countDraft',S.countDraft); const i=S.items.find(x=>x.id===id), el=$('#diff-'+id); if(el&&i) el.innerHTML=diffTxt(i); updateCountBar(); return; }
+  if(!t.dataset.d) return;
   const [id,f]=t.dataset.d.split('|'); (S.draft[id]=S.draft[id]||{})[f]=t.value===''?undefined:parseFloat(t.value);
   if(S.wizard==='close') updatePrev();
 });
