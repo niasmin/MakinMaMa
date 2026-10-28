@@ -5,9 +5,10 @@
 | ไฟล์ | URL บน Cloudflare Pages | หน้าที่ |
 |---|---|---|
 | `index.html` | `/` | ระบบหลังบ้าน: แดชบอร์ด รายงาน สต๊อก การเงิน สูตร/ต้นทุนเมนู CRM พนักงาน |
-| `pos-frontend.html` | `/pos` | POS หน้าร้าน (ซิงก์ออเดอร์/สต๊อกผ่าน Firebase) |
+| `pos-frontend.html` | `/pos` | POS หน้าร้าน (ซิงก์ออเดอร์/สต๊อกกับหลังบ้านผ่าน Supabase) |
 | `stock-system.html` | `/stock` | ระบบสต๊อกเดี่ยว: เรียลไทม์ + งวดต้น-ปลาย คำนวณต้นทุนจริง |
-| `makin-mama-pos.html` | `/legacy` | POS/หลังบ้านแบบเดี่ยวรุ่นก่อนหน้า |
+| `makin-mama-pos.html` | `/legacy` | POS/หลังบ้านแบบเดี่ยวรุ่นก่อนหน้า (ไม่ซิงก์) |
+| `mm-sync.js` | — | ชั้นซิงก์ข้อมูลกับ Supabase ที่ 3 หน้าแรกใช้ร่วมกัน (ต้องอยู่โฟลเดอร์เดียวกัน) |
 
 ## Deploy บน Cloudflare Pages
 เว็บนี้เป็นไฟล์ static ล้วน ไม่มีขั้นตอน build
@@ -24,9 +25,11 @@
 
 ไฟล์ `_redirects` กำหนด URL สั้น (`/pos`, `/stock`, `/legacy`) และ `_headers` ใส่ security headers พื้นฐาน
 
-## Firebase
-เปิด Anonymous sign-in แล้วตั้ง Rules: `{"rules":{".read":"auth != null",".write":"auth != null"}}`
-ใส่ config (apiKey, databaseURL, projectId) ในหน้าตั้งค่าของแต่ละแอป — ไม่ต้อง commit ค่าเหล่านี้ลง repo
+## Supabase (ที่เก็บข้อมูลกลาง)
+ข้อมูลทุกหน้าเก็บในตาราง `public.mm_records` ของโปรเจกต์ Supabase `qrxfmymmsjsyzhvuudtj` (สคีมาอยู่ที่ `supabase/migrations/`)
+URL และ publishable key ใส่ไว้ใน `mm-sync.js` แล้ว — key นี้เปิดเผยได้ตามปกติ ความปลอดภัยมาจาก RLS + รหัสร้าน
 
-หลัง deploy แล้ว ให้เพิ่มโดเมน `<project>.pages.dev` (และโดเมนจริงถ้ามี) ใน Firebase Console → Authentication → Settings → **Authorized domains**
-และถ้าจำกัด API key ด้วย HTTP referrer ใน Google Cloud Console ให้เพิ่มโดเมนนี้ด้วย
+- ทุกอุปกรณ์ล็อกอินแบบ Anonymous แล้วต้องใส่ **รหัสร้าน** ก่อน จึงจะอ่าน/เขียนข้อมูลได้ (ผู้ใช้ของแอปอื่นในโปรเจกต์เดียวกันเข้าไม่ได้)
+- **ครั้งแรกสุด** รหัสที่ใส่จะถูกตั้งเป็นรหัสร้าน (อย่างน้อย 6 ตัวอักษร) — เปลี่ยนได้ในหน้าตั้งค่าของหลังบ้าน
+- ใส่รหัสครั้งเดียวต่อเบราว์เซอร์ ใช้ได้ทุกหน้าในโดเมนเดียวกัน
+- ข้อมูลในเครื่องจะถูกอัปโหลดขึ้นตอนเชื่อมต่อครั้งแรก ถ้าบน Supabase ยังไม่มีข้อมูลนั้น

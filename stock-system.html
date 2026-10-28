@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>มากิน มาม่า — ระบบสต๊อก</title>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="mm-sync.js"></script>
 <style>
 :root{--bg:#FFFBEA;--panel:#fff;--ink:#3A2400;--soft:#8A7A4E;--red:#C41E2A;--red-d:#8F1420;--red-s:#FCE9C8;--gold:#C6791E;--gold-s:#FBEBD3;--green:#2F9E52;--green-s:#E3F5E9;--line:#F3E6BE;--top:#FFCB05;--top-ink:#7A0000;}
 *{box-sizing:border-box}
@@ -88,14 +87,17 @@ const dd=iso=>new Date(iso).toLocaleDateString('th-TH',{day:'numeric',month:'sho
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
 const TL={in:'รับเข้า',out:'เบิกใช้',waste:'ของเสีย',adjust:'ปรับยอด/นับ'};
 
-const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),fb:null,fbOn:false,fbErr:'',last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in',listeners:[]};
+const S={items:[],moves:[],periods:[],tab:'dash',user:ld('user',''),fbOn:false,fbBusy:false,fbErr:'',last:null,wizard:null,draft:{},viewPeriod:null,moveType:'in'};
 
 const SEED=[['มาม่าไทย','ซอง'],['มาม่าบิ๊กแพ็ค','ซอง'],['มาม่าเกาหลี','ซอง'],['ไข่ไก่','ฟอง'],['ผักสด','ชุด'],['ลูกชิ้นไก่','ลูก'],['ลูกชิ้นปลา','ลูก'],['ลูกชิ้นเนื้อ','ลูก'],['ไส้กรอกหนังกรอบ','ชิ้น'],['เต้าหู้','ชิ้น'],['เนื้อวัว','กรัม'],['ไก่สับ','กรัม'],['สาหร่ายวากาเมะ','ห่อ'],['โบโลน่า','ชิ้น'],['แฮมไก่','ชิ้น'],['ปูอัด','ชิ้น'],['ชีสแผ่น','แผ่น'],['ไก่ฉีก','กรัม'],['หนังไก่กรอบ','ชิ้น'],['ปลาหมึก','กรัม'],['กุ้ง','ตัว'],['นักเกต','ชิ้น'],['ชีสบอล','ชิ้น'],['เฟรนช์ฟราย','กรัม'],['ไก่ป๊อป','ชิ้น'],['ไก่ไร้กระดูก','ชิ้น'],['ซอสเกาหลี','มล.'],['ซอสเทอริยากิ','มล.'],['ข้าวสวย','ถ้วย'],['ไอศกรีมเนสเล่','ถ้วย'],['น้ำดื่ม','ขวด'],['น้ำแข็ง','กก.']];
 
-/* ---- data layer: ถ้าต่อ Firebase จะเขียนรายโหนด (กันเขียนทับกันระหว่างอุปกรณ์) ถ้าไม่ต่อใช้ localStorage ---- */
-function putItem(it){ if(S.fbOn) return S.fb.ref('items/'+it.id).set(it); const i=S.items.findIndex(x=>x.id===it.id); i<0?S.items.push(it):S.items[i]=it; sv('items',S.items); afterChange(); }
-function removeItem(id){ if(S.fbOn) return S.fb.ref('items/'+id).remove(); S.items=S.items.filter(x=>x.id!==id); sv('items',S.items); afterChange(); }
-function putPeriod(p){ if(S.fbOn) return S.fb.ref('periods/'+p.id).set(p); const i=S.periods.findIndex(x=>x.id===p.id); i<0?S.periods.push(p):S.periods[i]=p; sv('periods',S.periods); afterChange(); }
+/* ---- data layer: เก็บใน localStorage เสมอ ถ้าต่อ Supabase จะเขียนขึ้นรายรายการด้วย (กันเขียนทับกันระหว่างอุปกรณ์) ---- */
+const COLLS=['items','moves','periods'], CK=k=>'stock_'+k;
+function upsertLocal(k,o){ const i=S[k].findIndex(x=>x.id===o.id); i<0?S[k].push(o):S[k][i]=o; sv(k,S[k]); }
+function remotePut(k,o){ if(S.fbOn) return MMSync.put(CK(k),o.id,o).catch(e=>toast('ซิงค์ไม่สำเร็จ (บันทึกในเครื่องแล้ว): '+e.message)); }
+function putItem(it){ upsertLocal('items',it); afterChange(); return remotePut('items',it); }
+function removeItem(id){ S.items=S.items.filter(x=>x.id!==id); sv('items',S.items); afterChange(); if(S.fbOn) return MMSync.remove(CK('items'),id).catch(e=>toast('ซิงค์ไม่สำเร็จ: '+e.message)); }
+function putPeriod(p){ upsertLocal('periods',p); afterChange(); return remotePut('periods',p); }
 const openPeriod=()=>S.periods.find(p=>p.status==='open')||null;
 
 function applyToItem(it,mv){
@@ -109,13 +111,15 @@ function commitMove(mv){
   const op=openPeriod();
   Object.assign(mv,{id:uid(),time:new Date().toISOString(),by:S.user||'-',name:it.name,unit:it.unit,periodId:op?op.id:null});
   if(S.fbOn){
+    // อ่าน-คำนวณ-เขียนยอดคงเหลือแบบกันชนกัน ถ้าอุปกรณ์อื่นแก้รายการเดียวกันพร้อมกันจะคำนวณใหม่จากค่าล่าสุด
     let res=null;
-    return new Promise(resolve=>{
-      S.fb.ref('items/'+it.id).transaction(cur=>{ if(cur===null) return cur; res=applyToItem(cur,mv); return res.item; },(err,committed)=>{
-        if(err||!committed||!res){ toast('บันทึกไม่สำเร็จ กรุณาลองใหม่'); return resolve(false); }
-        Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); S.fb.ref('moves/'+mv.id).set(mv); resolve(true);
-      });
-    });
+    return MMSync.mutate(CK('items'),it.id,cur=>{ res=applyToItem(cur,mv); return res.item; }).then(saved=>{
+      if(saved===undefined||!res){ toast('บันทึกไม่สำเร็จ กรุณาลองใหม่'); return false; }
+      upsertLocal('items',saved);
+      Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); upsertLocal('moves',mv); afterChange();
+      remotePut('moves',mv);
+      return true;
+    },e=>{ toast('บันทึกไม่สำเร็จ: '+e.message); return false; });
   }
   const res=applyToItem(it,mv); S.items[S.items.indexOf(it)]=res.item; sv('items',S.items);
   Object.assign(mv,{delta:res.delta,unitCost:res.unitCost,value:res.value}); S.moves.push(mv); sv('moves',S.moves); afterChange();
@@ -235,14 +239,13 @@ function draftCounts(){ const c={}; S.items.forEach(i=>{const v=(S.draft[i.id]||
 
 function settingsHtml(){
   return `<div class="card"><h3>👤 ผู้ใช้งาน</h3><div class="note">ชื่อนี้จะถูกบันทึกในทุกรายการรับ/เบิก เพื่อตรวจสอบย้อนหลัง</div><div class="row" style="margin-top:8px"><div class="f"><input id="uname" value="${esc(S.user)}" placeholder="ชื่อของคุณ"></div><button class="p" data-act="saveUser">บันทึก</button></div></div>
-  <div class="card"><h3>🔥 Firebase Realtime Database</h3>
-  <div>${S.fbOn?'<span style="color:var(--green)">🟢 เชื่อมต่อแล้ว — ทุกอุปกรณ์ที่ใช้ config เดียวกันเห็นข้อมูลสดพร้อมกัน</span>':'<span class="note">🔴 ยังไม่เชื่อมต่อ (เก็บในเครื่องนี้เท่านั้น)</span>'}</div>
+  <div class="card"><h3>☁️ Supabase</h3>
+  <div>${S.fbOn?'<span style="color:var(--green)">🟢 เชื่อมต่อแล้ว — ทุกอุปกรณ์ของร้านเห็นข้อมูลสดพร้อมกัน</span>':S.fbBusy?'<span class="note">⏳ กำลังเชื่อมต่อ...</span>':'<span class="note">🔴 ยังไม่เชื่อมต่อ (เก็บในเครื่องนี้เท่านั้น)</span>'}</div>
   ${S.fbErr?`<div class="err">⚠ ${esc(S.fbErr)}</div>`:''}
   ${S.fbOn?'<div style="margin-top:8px"><button class="s" data-act="disconnect">ยกเลิกการเชื่อมต่อ</button></div>':`
-  <div class="row" style="margin-top:8px"><div class="f"><label>apiKey</label><input id="fb1"></div><div class="f"><label>authDomain</label><input id="fb2"></div></div>
-  <div class="row"><div class="f"><label>databaseURL</label><input id="fb3" placeholder="https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app"></div><div class="f"><label>projectId</label><input id="fb4"></div></div>
-  <button class="p" data-act="connect">🔥 เชื่อมต่อ</button>`}
-  <div class="note" style="margin-top:10px">ต้องเปิด Anonymous sign-in ใน Firebase Authentication และตั้ง Rules เป็น <code>{"rules":{".read":"auth != null",".write":"auth != null"}}</code> — เป็นการป้องกันระดับพื้นฐาน ใครที่ได้ config ไปจะเข้าถึงข้อมูลได้ ถ้าต้องการแยกสิทธิ์รายคนต้องเพิ่มระบบล็อกอินจริง<br>ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Firebase ยังว่าง)</div></div>
+  <div class="row" style="margin-top:8px"><div class="f"><label>รหัสร้าน</label><input id="fbcode" type="password" autocomplete="off" placeholder="รหัสเดียวกับระบบหลังบ้าน"></div></div>
+  <button class="p" data-act="connect">☁️ เชื่อมต่อ</button>`}
+  <div class="note" style="margin-top:10px">ใช้รหัสร้านเดียวกับระบบหลังบ้าน/POS — ถ้าเคยเชื่อมต่อจากหน้าอื่นในเบราว์เซอร์นี้แล้วจะเชื่อมต่อให้อัตโนมัติ ใครรู้รหัสร้านจะเข้าถึงข้อมูลได้ เก็บไว้เป็นความลับ<br>ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังว่าง)</div></div>
   <div class="card"><h3>ส่งออก / ล้างข้อมูล</h3><div class="row"><button class="s" data-act="exportMoves">⤓ ส่งออกรายการรับ/เบิกทั้งหมด (CSV)</button><button class="s" data-act="resetLocal" style="color:var(--red)">ล้างข้อมูลในเครื่องนี้</button></div></div>`;
 }
 
@@ -330,28 +333,29 @@ function download(name,rows){
 function exportMoves(){ download('stock-moves.csv',[['เวลา','ประเภท','วัตถุดิบ','จำนวน','หน่วย','ต้นทุน/หน่วย','มูลค่า','โดย','หมายเหตุ','งวด']].concat(S.moves.slice().sort((a,b)=>a.time.localeCompare(b.time)).map(m=>[new Date(m.time).toLocaleString('th-TH'),TL[m.type],m.name,m.delta,m.unit,m.unitCost,m.value,m.by,m.note||'',(S.periods.find(p=>p.id===m.periodId)||{}).name||'']))); }
 function exportPeriod(id){ const p=S.periods.find(x=>x.id===id); if(!p||!p.summary) return; download('period-'+p.name+'.csv',[['วัตถุดิบ','หน่วย','ต้นงวด','ต้นทุนต้นงวด/หน่วย','รับเข้า','ค่ารับเข้า','เบิกใช้','เสีย','ระบบมีปลายงวด','นับจริง','ต้นทุนปลายงวด/หน่วย','ใช้จริง','ต้นทุนใช้ไป','ส่วนต่างนับ','มูลค่าส่วนต่าง']].concat(p.summary.rows.map(r=>[r.name,r.unit,r.openQty,r.openCost,r.inQty,r.inCost,r.outQty,r.wasteQty,r.sysQty,r.physQty,r.closeCost,r.usedQty,r.cogs,r.varQty,r.varVal])).concat([[],['รวม','','','','','','','','','','','',p.summary.totals.cogs,'',p.summary.totals.varVal]])); }
 
-/* ================= Firebase ================= */
-async function connectFb(cfg){
+/* ================= Supabase ================= */
+async function connectFb(code){
+  S.fbErr=''; S.fbBusy=true; renderTab();
   try{
-    S.fbErr=''; detach();
-    if(firebase.apps.length) await Promise.all(firebase.apps.map(a=>a.delete()));
-    firebase.initializeApp(cfg);
-    await firebase.auth().signInAnonymously();   // ต้องล็อกอินให้เสร็จก่อนเริ่มอ่านข้อมูล ไม่งั้นโดน Rules ปฏิเสธ
-    S.fb=firebase.database();
-    ['items','moves','periods'].forEach(k=>{
-      const ref=S.fb.ref(k);
-      const cb=ref.on('value',snap=>{
-        const v=snap.val();
-        if(v===null){ S[k].forEach(o=>ref.child(o.id).set(o)); }
-        else { S[k]=Object.values(v); sv(k,S[k]); }
-        S.last=new Date(); refreshLive();
-      },err=>{ S.fbErr='อ่านข้อมูล '+k+' ไม่สำเร็จ: '+err.message; S.fbOn=false; renderTab(); });
-      S.listeners.push({ref,cb});
-    });
-    S.fbOn=true; localStorage.setItem(LS+'fbcfg',JSON.stringify(cfg)); toast('เชื่อมต่อ Firebase แล้ว'); renderTab();
-  }catch(e){ S.fbOn=false; S.fbErr='เชื่อมต่อไม่สำเร็จ: '+e.message+(e.code==='auth/operation-not-allowed'?' (ยังไม่ได้เปิด Anonymous sign-in)':''); renderTab(); }
+    const { member }=await MMSync.connect(code);
+    if(member){
+      MMSync.subscribe(evt=>{
+        const k=COLLS.find(c=>CK(c)===evt.coll); if(!k) return;
+        if(evt.type==='delete') S[k]=S[k].filter(x=>x.id!==evt.id);
+        else if(evt.data){ const i=S[k].findIndex(x=>x.id===evt.id); i<0?S[k].push(evt.data):S[k][i]=evt.data; }
+        sv(k,S[k]); S.last=new Date(); refreshLive();
+      });
+      for(const k of COLLS){
+        const rows=await MMSync.list(CK(k));
+        if(rows.length){ S[k]=rows.map(r=>r.data).filter(Boolean); sv(k,S[k]); }
+        else if(S[k].length) await MMSync.putMany(CK(k),S[k].map(o=>({id:o.id,data:o})));
+      }
+      S.fbOn=true; S.last=new Date();
+      if(code) toast('เชื่อมต่อ Supabase แล้ว');
+    }
+  }catch(e){ S.fbOn=false; S.fbErr='เชื่อมต่อไม่สำเร็จ: '+e.message; }
+  S.fbBusy=false; renderTab();
 }
-function detach(){ S.listeners.forEach(({ref,cb})=>ref.off('value',cb)); S.listeners=[]; }
 
 /* ================= events ================= */
 document.addEventListener('click',async e=>{
@@ -372,9 +376,9 @@ document.addEventListener('click',async e=>{
   else if(a==='viewPeriod'){ S.viewPeriod=v; refreshLive(true); }
   else if(a==='exportMoves') exportMoves();
   else if(a==='exportPeriod') exportPeriod(v);
-  else if(a==='connect'){ const cfg={apiKey:$('#fb1').value.trim(),authDomain:$('#fb2').value.trim(),databaseURL:$('#fb3').value.trim(),projectId:$('#fb4').value.trim()}; if(!cfg.apiKey||!cfg.databaseURL||!cfg.projectId) return toast('กรอก apiKey, databaseURL, projectId'); toast('กำลังเชื่อมต่อ...'); connectFb(cfg); }
-  else if(a==='disconnect'){ detach(); try{await Promise.all(firebase.apps.map(x=>x.delete()))}catch(_){} S.fb=null; S.fbOn=false; localStorage.removeItem(LS+'fbcfg'); renderTab(); toast('ยกเลิกการเชื่อมต่อแล้ว'); }
-  else if(a==='resetLocal'){ if(S.fbOn) return toast('ยกเลิกการเชื่อมต่อ Firebase ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
+  else if(a==='connect'){ const code=$('#fbcode').value; if(code.length<6) return toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); connectFb(code); }
+  else if(a==='disconnect'){ await MMSync.disconnect(); S.fbOn=false; renderTab(); toast('ยกเลิกการเชื่อมต่อแล้ว'); }
+  else if(a==='resetLocal'){ if(S.fbOn) return toast('ยกเลิกการเชื่อมต่อ Supabase ก่อน (กันลบข้อมูลกลางโดยไม่ตั้งใจ)'); if(confirm('ล้างข้อมูลสต๊อกทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้')){ ['items','moves','periods'].forEach(k=>{S[k]=[];sv(k,[])}); S.wizard=null; renderTab(); toast('ล้างแล้ว'); } }
 });
 document.addEventListener('input',e=>{
   const t=e.target; if(!t.dataset.d) return;
@@ -386,7 +390,7 @@ window.addEventListener('storage',e=>{ if(S.fbOn||!e.key||!e.key.startsWith(LS))
 /* ================= init ================= */
 ['items','moves','periods'].forEach(k=>S[k]=ld(k,[]));
 renderTab();
-{ const c=ld('fbcfg',null); if(c&&c.databaseURL) connectFb(c); }
+connectFb();
 </script>
 </body>
 </html>

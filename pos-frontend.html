@@ -407,11 +407,11 @@ body{
       </div>
     </div>
     <div class="form-card">
-      <h4>🔥 Firebase Realtime Database (ซิงค์ออร์เดอร์+สต๊อกกับระบบหลังบ้าน)</h4>
+      <h4>☁️ Supabase (ซิงค์ออร์เดอร์+สต๊อกกับระบบหลังบ้าน)</h4>
       <div id="fbStatusNote" class="small-note"></div>
       <div id="fbErrorNote" class="small-note" style="color:var(--accent-dark);"></div>
       <div id="fbFormWrap"></div>
-      <div class="small-note">ต้องกรอก config ชุดเดียวกันกับที่ตั้งไว้ในระบบหลังบ้าน (index.html) เพื่อให้ทั้งสองระบบเห็นออร์เดอร์และสต๊อกชุดเดียวกันแบบเรียลไทม์ — เมนู/ท็อปปิ้ง/ชนิดมาม่ายังจัดการแยกกันคนละระบบ ไม่ได้ซิงค์กัน</div>
+      <div class="small-note">ใช้รหัสร้านเดียวกันกับระบบหลังบ้าน — ถ้าเคยเชื่อมต่อจากหน้าหลังบ้านในเบราว์เซอร์นี้แล้วจะเชื่อมต่อให้อัตโนมัติ ทั้งสองระบบจะเห็นออร์เดอร์และสต๊อกชุดเดียวกันแบบเรียลไทม์ — เมนู/ท็อปปิ้ง/ชนิดมาม่ายังจัดการแยกกันคนละระบบ ไม่ได้ซิงค์กัน</div>
     </div>
   </div>
 </div>
@@ -437,9 +437,8 @@ body{
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="mm-sync.js"></script>
 <script>
 const uid = () => Math.random().toString(36).slice(2,10);
 const money = n => '฿' + Number(n||0).toLocaleString('th-TH');
@@ -534,11 +533,10 @@ let unlockedTabs = false;
 let lastOrderForPrint = null;
 
 // --- STORAGE: localStorage (ทำงานได้ในเบราว์เซอร์ทั่วไป ไม่ต้องพึ่ง window.storage ของ Claude) ---
-// พร้อมซิงค์ 'orders' และ 'stock' ผ่าน Firebase Realtime Database (ถ้าตั้งค่าไว้) เพื่อเชื่อมกับระบบหลังบ้าน
+// พร้อมซิงค์ 'orders' และ 'stock' ผ่าน Supabase (ถ้าเชื่อมต่อไว้) เพื่อเชื่อมกับระบบหลังบ้าน
 const LS_PREFIX = 'mm_pos_';
-const FB_SYNC_KEYS = ['orders','stock']; // เฉพาะ 2 คีย์นี้ที่ซิงค์กับระบบหลังบ้าน — เมนู/ท็อปปิ้ง/ชนิดมาม่า/รหัสผ่านยังคงเก็บแยกในเครื่องนี้เท่านั้น
-let fbDb = null, fbConnected = false, fbError = '';
-let fbListeners = [];
+const SYNC_KEYS = ['orders','stock']; // เฉพาะ 2 คีย์นี้ที่ซิงค์กับระบบหลังบ้าน — เมนู/ท็อปปิ้ง/ชนิดมาม่า/รหัสผ่านยังคงเก็บแยกในเครื่องนี้เท่านั้น
+let syncConnected = false, syncBusy = false, syncError = '';
 
 function loadLocal(key, fallback){
   try{ const r = localStorage.getItem(LS_PREFIX+key); return r!==null ? JSON.parse(r) : fallback; }
@@ -556,10 +554,10 @@ async function getOrInit(key, def){
 }
 function persist(key, val){
   saveLocal(key, val);
-  if(fbConnected && fbDb && FB_SYNC_KEYS.includes(key)){
-    fbDb.ref(key).set(val).catch(e=>{
-      console.error('Firebase save failed', key, e);
-      showToast('ซิงค์กับ Firebase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): ' + e.message);
+  if(syncConnected && SYNC_KEYS.includes(key)){
+    MMSync.put('kv', key, val).catch(e=>{
+      console.error('Supabase save failed', key, e);
+      showToast('ซิงค์กับ Supabase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): ' + e.message);
     });
   }
 }
@@ -570,101 +568,72 @@ async function saveToppingsData(){ persist('toppings', toppings); }
 async function saveNoodlesData(){ persist('noodles', noodleTypes); }
 async function savePasscodeData(){ persist('passcode', {code:passcode}); }
 
-// --- FIREBASE REALTIME DATABASE (ซิงค์ orders+stock กับระบบหลังบ้าน) ---
-function loadFbConfig(){ try{ const r = localStorage.getItem('mm_pos_firebaseConfig'); return r?JSON.parse(r):null; }catch(e){ return null; } }
-function saveFbConfig(cfg){ try{ localStorage.setItem('mm_pos_firebaseConfig', JSON.stringify(cfg)); }catch(e){} }
-function detachFbListeners(){ fbListeners.forEach(({ref,cb})=>ref.off('value',cb)); fbListeners=[]; }
-function connectFirebase(cfg){
+// --- SUPABASE (ซิงค์ orders+stock กับระบบหลังบ้าน) ---
+function applyRemote(key, val){
+  if(key==='orders') orders = val; else if(key==='stock') stock = val;
+  saveLocal(key, val);
+}
+async function connectSync(code){
+  syncBusy = true; syncError = ''; renderSyncSection();
   try{
-    detachFbListeners();
-    if(firebase.apps && firebase.apps.length) firebase.apps.forEach(a=>a.delete());
-    firebase.initializeApp(cfg);
-    fbDb = firebase.database();
-    fbError = '';
-    firebase.auth().signInAnonymously().catch(e=>{
-      fbError = 'เข้าสู่ระบบ Firebase Auth ไม่สำเร็จ: ' + e.message + ' (ตรวจสอบว่าเปิด Anonymous sign-in ในคอนโซล Firebase แล้ว)';
-      renderFirebaseSection();
-    });
-    FB_SYNC_KEYS.forEach(key=>{
-      const ref = fbDb.ref(key);
-      const cb = ref.on('value', snap=>{
-        const val = snap.val();
-        if(val===null){
-          // ยังไม่มีข้อมูลบน Firebase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
-          const cur = key==='orders' ? orders : stock;
-          if(cur && cur.length>0) ref.set(cur).catch(e=>console.error('seed failed', key, e));
-        } else {
-          if(key==='orders') orders = val; else if(key==='stock') stock = val;
-          saveLocal(key, val);
-          renderOrders(); renderReport(); renderStock(); renderMenu();
-        }
-      }, err=>{
-        fbError = 'อ่านข้อมูล Firebase ไม่สำเร็จ (' + key + '): ' + err.message + ' — ตรวจสอบ Realtime Database Rules';
-        fbConnected = false;
-        renderFirebaseSection();
+    const { member } = await MMSync.connect(code);
+    if(member){
+      MMSync.subscribe(evt=>{
+        if(evt.coll!=='kv' || !SYNC_KEYS.includes(evt.id) || evt.type!=='upsert' || evt.data===null) return;
+        applyRemote(evt.id, evt.data);
+        renderOrders(); renderReport(); renderStock(); renderMenu();
       });
-      fbListeners.push({ref, cb});
-    });
-    fbConnected = true;
-    renderFirebaseSection();
-    showToast('กำลังเชื่อมต่อ Firebase...');
+      const rows = await MMSync.list('kv');
+      for(const key of SYNC_KEYS){
+        const row = rows.find(r=>r.id===key);
+        if(row && row.data!==null) applyRemote(key, row.data);
+        else {
+          // ยังไม่มีข้อมูลบน Supabase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
+          const cur = key==='orders' ? orders : stock;
+          if(cur && cur.length>0) MMSync.put('kv', key, cur).catch(e=>console.error('seed failed', key, e));
+        }
+      }
+      renderOrders(); renderReport(); renderStock(); renderMenu();
+      syncConnected = true;
+      if(code) showToast('เชื่อมต่อ Supabase แล้ว');
+    }
   }catch(e){
-    fbConnected = false;
-    fbError = 'เชื่อมต่อ Firebase ไม่สำเร็จ: ' + e.message;
     console.error(e);
-    renderFirebaseSection();
+    syncConnected = false;
+    syncError = e.message;
   }
+  syncBusy = false;
+  renderSyncSection();
 }
-function disconnectFirebase(){
-  detachFbListeners();
-  try{ if(firebase.apps && firebase.apps.length) firebase.apps.forEach(a=>a.delete()); }catch(e){}
-  fbDb = null; fbConnected = false; fbError = '';
-  localStorage.removeItem('mm_pos_firebaseConfig');
-  renderFirebaseSection();
-  showToast('ยกเลิกการเชื่อมต่อ Firebase แล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
+async function disconnectSync(){
+  await MMSync.disconnect();
+  syncConnected = false; syncError = '';
+  renderSyncSection();
+  showToast('ยกเลิกการเชื่อมต่อแล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
 }
-function renderFirebaseSection(){
+function renderSyncSection(){
   const statusEl = document.getElementById('fbStatusNote');
   const errEl = document.getElementById('fbErrorNote');
   const formWrap = document.getElementById('fbFormWrap');
   if(!statusEl || !formWrap) return;
-  statusEl.innerHTML = fbConnected
+  statusEl.innerHTML = syncConnected
     ? '<span style="color:var(--green);">🟢 เชื่อมต่อแล้ว — ออร์เดอร์และสต๊อกจะซิงค์กับระบบหลังบ้านแบบเรียลไทม์</span>'
+    : syncBusy ? '<span style="color:var(--ink-soft);">⏳ กำลังเชื่อมต่อ...</span>'
     : '<span style="color:var(--ink-soft);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเครื่องนี้เท่านั้น)</span>';
-  errEl.textContent = fbError ? '⚠ ' + fbError : '';
-  if(fbConnected){
+  errEl.textContent = syncError ? '⚠ ' + syncError : '';
+  if(syncConnected){
     formWrap.innerHTML = `<button class="advance-btn" id="fbDisconnectBtn" style="margin-top:8px;">ยกเลิกการเชื่อมต่อ</button>`;
-    document.getElementById('fbDisconnectBtn').onclick = disconnectFirebase;
+    document.getElementById('fbDisconnectBtn').onclick = disconnectSync;
   } else {
     formWrap.innerHTML = `
-      <div class="form-row"><label>apiKey</label><input id="fb-apikey" placeholder="AIzaSy..."></div>
-      <div class="form-row"><label>authDomain</label><input id="fb-authdomain" placeholder="your-project.firebaseapp.com"></div>
-      <div class="form-row"><label>databaseURL</label><input id="fb-dburl" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"></div>
-      <div class="form-row"><label>projectId</label><input id="fb-projectid" placeholder="your-project-id"></div>
-      <div class="form-row"><label>storageBucket (ไม่บังคับ)</label><input id="fb-bucket" placeholder="your-project.appspot.com"></div>
-      <div class="form-row"><label>messagingSenderId (ไม่บังคับ)</label><input id="fb-sender" placeholder="123456789"></div>
-      <div class="form-row"><label>appId (ไม่บังคับ)</label><input id="fb-appid" placeholder="1:123:web:abc"></div>
-      <button class="save-menu-btn" id="fbConnectBtn">🔥 เชื่อมต่อ Firebase</button>`;
+      <div class="form-row"><label>รหัสร้าน</label><input id="sync-code" type="password" autocomplete="off" placeholder="รหัสเดียวกับระบบหลังบ้าน"></div>
+      <button class="save-menu-btn" id="fbConnectBtn" ${syncBusy?'disabled':''}>☁️ เชื่อมต่อ</button>`;
     document.getElementById('fbConnectBtn').onclick = ()=>{
-      const cfg = {
-        apiKey: document.getElementById('fb-apikey').value.trim(),
-        authDomain: document.getElementById('fb-authdomain').value.trim(),
-        databaseURL: document.getElementById('fb-dburl').value.trim(),
-        projectId: document.getElementById('fb-projectid').value.trim(),
-        storageBucket: document.getElementById('fb-bucket').value.trim(),
-        messagingSenderId: document.getElementById('fb-sender').value.trim(),
-        appId: document.getElementById('fb-appid').value.trim(),
-      };
-      if(!cfg.apiKey || !cfg.databaseURL || !cfg.projectId){ showToast('กรุณากรอกอย่างน้อย apiKey, databaseURL, projectId'); return; }
-      saveFbConfig(cfg);
-      connectFirebase(cfg);
+      const code = document.getElementById('sync-code').value;
+      if(code.length<6){ showToast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      connectSync(code);
     };
   }
-}
-function initFbFromSaved(){
-  const cfg = loadFbConfig();
-  if(cfg && cfg.databaseURL) connectFirebase(cfg);
-  else renderFirebaseSection();
 }
 
 async function loadAll(){
@@ -676,7 +645,7 @@ async function loadAll(){
   const pc = await getOrInit('passcode', {code:''});
   passcode = pc.code || '';
   renderCats(); renderMenu(); renderCart(); renderStock(); renderOrders(); renderReport(); renderItemList(); renderRecipeRows(); renderToppingList(); renderNoodleList(); renderPriceWarning();
-  initFbFromSaved();
+  connectSync();
 }
 
 

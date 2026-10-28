@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>มากิน มาม่า - Back Office</title>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="mm-sync.js"></script>
 <style>
   :root{
     --bg: #FFF8F0; --surface: #FFFFFF; --surface-2: #FFF3E6; --line: #F0DFC8;
@@ -127,7 +126,7 @@
     menu:[], toppings:[], costs:[], stock:[], waste:[], settings:{ownerPin:'', estimatedBowlsPerMonth:600}, orders:[],
     currentUser:null, staff:[], accessLog:[], loginInput:'', loginRole:ROLES[0], timeLogs:[],
     recipeCart:[], menuFormDraft:{name:'',price:'',portion:'',method:''}, editingMenuId:null, lastRefresh:null,
-    firebaseConfig:null, firebaseConnected:false, firebaseError:'', db:null,
+    syncConnected:false, syncError:'', syncBusy:false,
     customers:[], custFormDraft:{phone:'',name:'',tags:'',notes:''}, editingCustId:null,
   };
   const SYNC_KEYS = ['menu','toppings','costs','stock','waste','settings','orders','staff','accessLog','timeLogs','customers'];
@@ -142,7 +141,7 @@
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  // ใช้ localStorage เป็นแคช/ที่เก็บสำรองเสมอ และซิงค์ขึ้น Firebase Realtime Database ด้วยถ้าตั้งค่าไว้
+  // ใช้ localStorage เป็นแคช/ที่เก็บสำรองเสมอ และซิงค์ขึ้น Supabase ด้วยถ้าเชื่อมต่อไว้
   function loadData(key, fallback){
     try{ const r = localStorage.getItem('mm_bo_'+key); return r ? JSON.parse(r) : fallback; }
     catch(e){ return fallback; }
@@ -153,75 +152,53 @@
   }
   function saveData(key, val){
     saveDataLocal(key, val);
-    if(state.firebaseConnected && state.db){
-      state.db.ref(key).set(val===undefined?null:val).catch(e=>{
-        console.error('Firebase save failed', key, e);
-        toast('ซิงค์กับ Firebase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): '+e.message);
+    if(state.syncConnected){
+      MMSync.put('kv', key, val).catch(e=>{
+        console.error('Supabase save failed', key, e);
+        toast('ซิงค์กับ Supabase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): '+e.message);
       });
     }
   }
 
-  // --- FIREBASE REALTIME DATABASE (ซิงค์ข้ามอุปกรณ์แบบเรียลไทม์) ---
-  let fbListeners = [];
-  function saveFirebaseConfig(cfg){ try{ localStorage.setItem('mm_bo_firebaseConfig', JSON.stringify(cfg)); }catch(e){} }
-  function loadFirebaseConfig(){ try{ const r = localStorage.getItem('mm_bo_firebaseConfig'); return r?JSON.parse(r):null; }catch(e){ return null; } }
-  function detachFirebaseListeners(){
-    fbListeners.forEach(({ref,cb})=>ref.off('value', cb));
-    fbListeners = [];
-  }
-  function connectFirebase(cfg){
+  // --- SUPABASE (ซิงค์ข้ามอุปกรณ์แบบเรียลไทม์) ---
+  function hasData(v){ return v && (Array.isArray(v) ? v.length>0 : Object.keys(v).length>0); }
+  async function connectSync(code){
+    state.syncBusy = true; state.syncError = ''; render();
     try{
-      detachFirebaseListeners();
-      if(firebase.apps && firebase.apps.length){ firebase.apps.forEach(a=>a.delete()); }
-      firebase.initializeApp(cfg);
-      state.db = firebase.database();
-      state.firebaseError = '';
-      firebase.auth().signInAnonymously().catch(e=>{
-        state.firebaseError = 'เข้าสู่ระบบ Firebase Auth ไม่สำเร็จ: '+e.message+' (ตรวจสอบว่าเปิดใช้ Anonymous sign-in ในคอนโซล Firebase แล้ว)';
-        render();
+      const { member } = await MMSync.connect(code);
+      if(!member){ state.syncBusy = false; render(); return; }
+      MMSync.subscribe(evt=>{
+        if(evt.coll!=='kv' || !SYNC_KEYS.includes(evt.id) || evt.type!=='upsert' || evt.data===null) return;
+        state[evt.id] = evt.data;
+        saveDataLocal(evt.id, evt.data);
+        if(state.loaded) render();
       });
-      SYNC_KEYS.forEach(key=>{
-        const ref = state.db.ref(key);
-        const cb = ref.on('value', snap=>{
-          const val = snap.val();
-          if(val===null){
-            // ยังไม่มีข้อมูลบน Firebase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
-            if(state[key] && (Array.isArray(state[key]) ? state[key].length>0 : Object.keys(state[key]).length>0)){
-              ref.set(state[key]).catch(e=>console.error('seed failed', key, e));
-            }
-          } else {
-            state[key] = val;
-            saveDataLocal(key, val);
-            if(state.loaded) render();
-          }
-        }, err=>{
-          state.firebaseError = 'อ่านข้อมูล Firebase ไม่สำเร็จ ('+key+'): '+err.message+' — ตรวจสอบ Realtime Database Rules';
-          state.firebaseConnected = false;
-          render();
-        });
-        fbListeners.push({ref, cb});
-      });
-      state.firebaseConnected = true;
-      render();
+      const rows = await MMSync.list('kv');
+      const remote = {};
+      rows.forEach(r=>{ remote[r.id] = r.data; });
+      for(const key of SYNC_KEYS){
+        if(remote[key]!==undefined && remote[key]!==null){
+          state[key] = remote[key];
+          saveDataLocal(key, remote[key]);
+        } else if(hasData(state[key])){
+          // ยังไม่มีข้อมูลบน Supabase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
+          MMSync.put('kv', key, state[key]).catch(e=>console.error('seed failed', key, e));
+        }
+      }
+      state.syncConnected = true;
+      if(code) toast('เชื่อมต่อ Supabase แล้ว');
     }catch(e){
-      state.firebaseConnected = false;
-      state.firebaseError = 'เชื่อมต่อ Firebase ไม่สำเร็จ: '+e.message;
-      console.error(e); render();
+      console.error(e);
+      state.syncConnected = false;
+      state.syncError = e.message;
     }
+    state.syncBusy = false;
+    render();
   }
-  function disconnectFirebase(){
-    detachFirebaseListeners();
-    try{ if(firebase.apps && firebase.apps.length) firebase.apps.forEach(a=>a.delete()); }catch(e){}
-    state.db = null; state.firebaseConnected = false; state.firebaseError = '';
-    localStorage.removeItem('mm_bo_firebaseConfig');
-    state.firebaseConfig = null;
-    render(); toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
-  }
-  function initFirebaseFromSaved(){
-    const cfg = loadFirebaseConfig();
-    if(!cfg || !cfg.databaseURL) return;
-    state.firebaseConfig = cfg;
-    connectFirebase(cfg);
+  async function disconnectSync(){
+    await MMSync.disconnect();
+    state.syncConnected = false; state.syncError = '';
+    render(); toast('ยกเลิกการเชื่อมต่อแล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
   }
 
   function load(){
@@ -244,7 +221,7 @@
     if(headerLogo) headerLogo.src = LOGO_SRC;
     state.lastRefresh = new Date();
     if(state.tab==='dash' || state.tab==='reports') startAutoRefresh();
-    initFirebaseFromSaved();
+    connectSync();
     render();
   }
 
@@ -252,7 +229,7 @@
   function startAutoRefresh(){
     if(refreshTimer) return;
     refreshTimer = setInterval(()=>{
-      if(state.firebaseConnected) return; // Firebase ส่งข้อมูลมาแบบเรียลไทม์อยู่แล้ว ไม่ต้อง poll ซ้ำ
+      if(state.syncConnected) return; // Supabase ส่งข้อมูลมาแบบเรียลไทม์อยู่แล้ว ไม่ต้อง poll ซ้ำ
       // อ่านข้อมูลล่าสุดจาก localStorage ของเบราว์เซอร์นี้ซ้ำ เพื่อให้แดชบอร์ด/รายงานอัปเดตเองโดยไม่ต้องรีเฟรชหน้า
       state.orders = loadData('orders', state.orders);
       state.stock = loadData('stock', state.stock);
@@ -605,7 +582,7 @@
 
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div class="mm-hint" style="margin:0;">${state.firebaseConnected ? '🟢 ซิงค์เรียลไทม์กับ Firebase (เห็นข้อมูลสดจากทุกอุปกรณ์)' : '🔄 อัปเดตทุก 6 วินาที (เฉพาะเบราว์เซอร์นี้ — ยังไม่ได้เชื่อมต่อ Firebase)'}${state.lastRefresh?' · ล่าสุด '+state.lastRefresh.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
+        <div class="mm-hint" style="margin:0;">${state.syncConnected ? '🟢 ซิงค์เรียลไทม์กับ Supabase (เห็นข้อมูลสดจากทุกอุปกรณ์)' : '🔄 อัปเดตทุก 6 วินาที (เฉพาะเบราว์เซอร์นี้ — ยังไม่ได้เชื่อมต่อ Supabase)'}${state.lastRefresh?' · ล่าสุด '+state.lastRefresh.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
         <div style="display:flex;gap:6px;">
           <button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-refresh-now-btn">รีเฟรชตอนนี้</button>
           ${state.settings.ownerPin?'<button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-relock-btn">🔒 ล็อกหน้าจอ</button>':''}
@@ -1044,34 +1021,28 @@
       </div>
       <div class="mm-hint">PIN นี้ใช้ป้องกันไม่ให้พนักงานเข้าถึงข้อมูลต้นทุน สถิติ และกำไรในหน้าแดชบอร์ดได้</div>
 
-      <div class="mm-section-title">🔥 Firebase Realtime Database (ซิงค์ข้อมูลข้ามอุปกรณ์แบบเรียลไทม์)</div>
+      <div class="mm-section-title">☁️ Supabase (ซิงค์ข้อมูลข้ามอุปกรณ์แบบเรียลไทม์)</div>
       <div class="mm-form">
         <div class="mm-li-main" style="margin-bottom:8px;">
-          สถานะ: ${state.firebaseConnected ? '<span style="color:var(--scallion);">🟢 เชื่อมต่อแล้ว — ข้อมูลจะซิงค์กับทุกอุปกรณ์ที่ใช้ config เดียวกันแบบเรียลไทม์</span>' : '<span style="color:var(--cream-dim);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเบราว์เซอร์นี้เท่านั้น)</span>'}
+          สถานะ: ${state.syncConnected ? '<span style="color:var(--scallion);">🟢 เชื่อมต่อแล้ว — ข้อมูลจะซิงค์กับทุกอุปกรณ์ของร้านแบบเรียลไทม์</span>' : state.syncBusy ? '<span style="color:var(--cream-dim);">⏳ กำลังเชื่อมต่อ...</span>' : '<span style="color:var(--cream-dim);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเบราว์เซอร์นี้เท่านั้น)</span>'}
         </div>
-        ${state.firebaseError ? '<div class="mm-hint" style="color:var(--chili);">⚠ '+escapeHtml(state.firebaseError)+'</div>' : ''}
-        ${!state.firebaseConnected ? `
+        ${state.syncError ? '<div class="mm-hint" style="color:var(--chili);">⚠ '+escapeHtml(state.syncError)+'</div>' : ''}
+        ${!state.syncConnected ? `
         <div class="mm-form-row">
-          <div class="mm-field"><label>apiKey</label><input id="fb-apikey" placeholder="AIzaSy..."/></div>
-          <div class="mm-field"><label>authDomain</label><input id="fb-authdomain" placeholder="your-project.firebaseapp.com"/></div>
+          <div class="mm-field"><label>รหัสร้าน</label><input id="sync-code" type="password" autocomplete="off" placeholder="อย่างน้อย 6 ตัวอักษร"/></div>
         </div>
+        <button class="mm-add-btn" id="mm-connect-sync-btn" ${state.syncBusy?'disabled':''}>☁️ เชื่อมต่อ</button>
+        ` : `
         <div class="mm-form-row">
-          <div class="mm-field"><label>databaseURL</label><input id="fb-dburl" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"/></div>
-          <div class="mm-field"><label>projectId</label><input id="fb-projectid" placeholder="your-project-id"/></div>
+          <div class="mm-field"><label>เปลี่ยนรหัสร้าน</label><input id="sync-newcode" type="password" autocomplete="off" placeholder="รหัสใหม่ อย่างน้อย 6 ตัวอักษร"/></div>
         </div>
-        <div class="mm-form-row">
-          <div class="mm-field"><label>storageBucket (ไม่บังคับ)</label><input id="fb-bucket" placeholder="your-project.appspot.com"/></div>
-          <div class="mm-field"><label>messagingSenderId (ไม่บังคับ)</label><input id="fb-sender" placeholder="123456789"/></div>
-          <div class="mm-field"><label>appId (ไม่บังคับ)</label><input id="fb-appid" placeholder="1:123:web:abc"/></div>
-        </div>
-        <button class="mm-add-btn" id="mm-connect-firebase-btn">🔥 เชื่อมต่อ Firebase</button>
-        ` : `<button class="mm-add-btn secondary" id="mm-disconnect-firebase-btn">ยกเลิกการเชื่อมต่อ</button>`}
+        <button class="mm-add-btn" id="mm-change-code-btn">บันทึกรหัสใหม่</button>
+        <button class="mm-add-btn secondary" id="mm-disconnect-sync-btn">ยกเลิกการเชื่อมต่อ</button>`}
       </div>
       <div class="mm-hint">
-        <b>วิธีเริ่มต้น:</b> ไปที่ <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> → สร้างโปรเจกต์ใหม่ (ฟรี) → เปิด "Realtime Database" → คัดลอกค่า config มาใส่ที่นี่ → ต้องกรอก config ชุดเดียวกันในทุกอุปกรณ์ที่ต้องการให้เห็นข้อมูลร่วมกัน (เครื่อง POS ที่ร้าน + มือถือเจ้าของร้าน)<br/><br/>
-        <b>⚠ สำคัญมากเรื่องความปลอดภัย:</b> ต้องไปตั้งค่า Realtime Database Rules ในคอนโซล Firebase เป็นอย่างน้อยดังนี้ ไม่เช่นนั้นข้อมูลร้าน (ต้นทุน ค่าแรง กำไร) จะเปิดเผยต่อสาธารณะ:<br/>
-        <code style="display:block;background:var(--surface-2);padding:8px;border-radius:6px;margin-top:4px;white-space:pre;">{"rules": {".read": "auth != null", ".write": "auth != null"}}</code>
-        และต้องไปเปิดใช้ "Anonymous" sign-in ใน Firebase Authentication → Sign-in method ด้วย (ระบบนี้ล็อกอินแบบไม่ระบุตัวตนให้อัตโนมัติเพื่อผ่านกฎด้านบน) — นี่เป็นความปลอดภัยระดับพื้นฐานเท่านั้น ถ้าต้องการล็อกด้วยบัญชีจริงของแต่ละคน แจ้งได้ จะช่วยต่อยอด Firebase Authentication แบบเต็มรูปแบบให้
+        ใส่ <b>รหัสร้าน</b> ชุดเดียวกันในทุกอุปกรณ์ที่ต้องการเห็นข้อมูลร่วมกัน (เครื่อง POS ที่ร้าน + มือถือเจ้าของร้าน) — ใส่ครั้งเดียวต่อเบราว์เซอร์ และใช้ได้กับทุกหน้า (หลังบ้าน / POS / สต๊อก)<br/>
+        <b>ครั้งแรกสุด:</b> รหัสที่ใส่จะถูกตั้งเป็นรหัสร้านเลย จากนั้นอุปกรณ์อื่นต้องใส่รหัสเดียวกันนี้ — เก็บรหัสไว้เป็นความลับ ใครรู้รหัสจะเข้าถึงข้อมูลร้าน (ต้นทุน ค่าแรง กำไร) ได้<br/>
+        ข้อมูลเดิมในเครื่องจะถูกอัปโหลดขึ้นให้ตอนเชื่อมต่อครั้งแรก (ถ้าบน Supabase ยังไม่มีข้อมูลนั้น)
       </div>
 
       <div class="mm-section-title">การเชื่อมต่อภายนอกอื่นๆ</div>
@@ -1323,25 +1294,20 @@
       saveData('settings', state.settings);
       state.unlocked = false; toast('บันทึก PIN แล้ว'); render();
     });
-    const connectFbBtn = document.getElementById('mm-connect-firebase-btn');
-    if(connectFbBtn) connectFbBtn.addEventListener('click', ()=>{
-      const cfg = {
-        apiKey: document.getElementById('fb-apikey').value.trim(),
-        authDomain: document.getElementById('fb-authdomain').value.trim(),
-        databaseURL: document.getElementById('fb-dburl').value.trim(),
-        projectId: document.getElementById('fb-projectid').value.trim(),
-        storageBucket: document.getElementById('fb-bucket').value.trim(),
-        messagingSenderId: document.getElementById('fb-sender').value.trim(),
-        appId: document.getElementById('fb-appid').value.trim(),
-      };
-      if(!cfg.apiKey || !cfg.databaseURL || !cfg.projectId){ toast('กรุณากรอกอย่างน้อย apiKey, databaseURL, projectId'); return; }
-      state.firebaseConfig = cfg;
-      saveFirebaseConfig(cfg);
-      connectFirebase(cfg);
-      toast('กำลังเชื่อมต่อ Firebase...');
+    const connectSyncBtn = document.getElementById('mm-connect-sync-btn');
+    if(connectSyncBtn) connectSyncBtn.addEventListener('click', ()=>{
+      const code = document.getElementById('sync-code').value;
+      if(code.length<6){ toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      connectSync(code);
     });
-    const disconnectFbBtn = document.getElementById('mm-disconnect-firebase-btn');
-    if(disconnectFbBtn) disconnectFbBtn.addEventListener('click', disconnectFirebase);
+    const changeCodeBtn = document.getElementById('mm-change-code-btn');
+    if(changeCodeBtn) changeCodeBtn.addEventListener('click', ()=>{
+      const code = document.getElementById('sync-newcode').value;
+      if(code.length<6){ toast('รหัสร้านต้องยาวอย่างน้อย 6 ตัวอักษร'); return; }
+      MMSync.setCode(code).then(()=>toast('เปลี่ยนรหัสร้านแล้ว — อุปกรณ์ใหม่ต้องใช้รหัสนี้'), e=>toast('เปลี่ยนรหัสไม่สำเร็จ: '+e.message));
+    });
+    const disconnectSyncBtn = document.getElementById('mm-disconnect-sync-btn');
+    if(disconnectSyncBtn) disconnectSyncBtn.addEventListener('click', disconnectSync);
   }
 
   load();
