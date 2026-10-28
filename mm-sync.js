@@ -135,7 +135,12 @@
     function emitStatus(){ if(opts.onStatus) opts.onStatus(status()); }
     const deltaOf = k => opts.keys[k].delta || [];
     const baseOf = (k, d) => { const b = {}; deltaOf(k).forEach(f=>{ if(d && typeof d[f] === 'number') b[f] = d[f]; }); return b; };
-    const entry = (k, d) => [hash(d), baseOf(k, d)];
+    // ภาพที่ซิงก์แล้วต่อรายการ: [hash, ค่าฐานของฟิลด์ delta, version บนเซิร์ฟเวอร์]
+    const entry = (k, d, v) => [hash(d), baseOf(k, d), v == null ? -1 : v];
+    const verOf = e => (e && e[2] != null ? e[2] : -1);
+    // ระหว่างส่งข้อมูลของคีย์ใด จะพักข้อมูลขาเข้าของคีย์นั้นไว้ก่อน (ไม่งั้นค่าที่ตัวเองเพิ่งส่งสะท้อนกลับมาจะถูกนับซ้ำ)
+    const inflight = new Set(), queued = {};
+    const clone = v => JSON.parse(JSON.stringify(v));
     function getList(k){
       const v = opts.get(k);
       const arr = Array.isArray(v) ? v : [];
@@ -156,12 +161,14 @@
     }
 
     // รับค่าจากเซิร์ฟเวอร์ 1 รายการ คืน true ถ้าข้อมูลในเครื่องเปลี่ยน
-    function applyRemote(k, id, data, deleted){
+    function applyRemote(k, id, data, deleted, version){
+      if(inflight.has(k)){ (queued[k] = queued[k] || []).push([id, data, deleted, version]); return false; }
       if(!opts.keys[k].list){
         if(deleted || data === null || data === undefined) return false;
         const local = opts.get(k), snap = snaps[k];
+        if(version != null && version <= verOf(snap)) return false; // เก่ากว่าที่มีแล้ว
         const dirty = local !== undefined && hash(local) !== snap[0];
-        snaps[k] = entry(k, data); saveSnap(k);
+        snaps[k] = entry(k, data, version); saveSnap(k);
         if(dirty || hash(local) === snaps[k][0]) return false; // แก้ในเครื่องค้างอยู่ — ของในเครื่องชนะ (จะถูกส่งขึ้นไป)
         opts.set(k, data); return true;
       }
@@ -176,7 +183,8 @@
         arr.splice(i, 1); setList(k, arr); return true;
       }
       if(!el && s) return false; // ลบในเครื่องแล้ว รอส่งคำสั่งลบ
-      snap[id] = entry(k, data); saveSnap(k);
+      if(s && version != null && version <= verOf(s)) return false; // เก่ากว่าที่มีแล้ว (รวมถึงค่าที่ตัวเองเพิ่งส่ง)
+      snap[id] = entry(k, data, version); saveSnap(k);
       if(!el){ arr.push(data); setList(k, arr); return true; }
       if(!dirty){
         if(hash(el) === snap[id][0]) return false;
@@ -188,6 +196,13 @@
       arr[i] = m; setList(k, arr); return true;
     }
 
+    function drain(k){
+      const q = queued[k]; delete queued[k];
+      let touched = false;
+      (q || []).forEach(a=>{ if(applyRemote(k, a[0], a[1], a[2], a[3])) touched = true; });
+      return touched;
+    }
+
     // ดึงข้อมูลจากเซิร์ฟเวอร์ (full = ทั้งหมด ใช้ตอนเชื่อมต่อ/กลับมาออนไลน์ ไม่งั้นเฉพาะที่เปลี่ยนตั้งแต่ครั้งก่อน)
     async function pull(full){
       const sb = getClient();
@@ -195,7 +210,7 @@
       const startedAt = new Date(Date.now() - 5000).toISOString();
       for(const k of keys){
         const cfg = opts.keys[k], coll = kc(k);
-        let q = sb.from('mm_records').select('id,data').eq('coll', coll);
+        let q = sb.from('mm_records').select('id,data,version').eq('coll', coll);
         if(!cfg.list) q = q.eq('id', k);
         if(!full && lastPull) q = q.gte('updated_at', lastPull);
         const { data: rows, error: err } = await q.order('created_at').limit(100000);
@@ -204,19 +219,19 @@
         if(snaps[k] === null){
           // เชื่อมต่อครั้งแรกบนเบราว์เซอร์นี้: ถ้าบนเซิร์ฟเวอร์มีข้อมูลแล้วใช้ของเซิร์ฟเวอร์ ถ้ายังว่างส่งของในเครื่องขึ้นไปตั้งต้น
           if(!cfg.list){
-            if(rows.length && rows[0].data !== null){ snaps[k] = entry(k, rows[0].data); opts.set(k, rows[0].data); touched = true; }
+            if(rows.length && rows[0].data !== null){ snaps[k] = entry(k, rows[0].data, rows[0].version); opts.set(k, rows[0].data); touched = true; }
             else snaps[k] = ['', {}];
           } else {
             snaps[k] = {};
             if(rows.length){
-              rows.forEach(r=>{ snaps[k][r.id] = entry(k, r.data); });
+              rows.forEach(r=>{ snaps[k][r.id] = entry(k, r.data, r.version); });
               setList(k, rows.map(r=>r.data)); touched = true;
             }
           }
           saveSnap(k);
         } else {
-          rows.forEach(r=>{ if(applyRemote(k, r.id, r.data, false)) touched = true; });
-          if(full && cfg.list){
+          rows.forEach(r=>{ if(applyRemote(k, r.id, r.data, false, r.version)) touched = true; });
+          if(full && cfg.list && !inflight.has(k)){
             // รายการที่เคยซิงก์แล้วแต่ไม่อยู่บนเซิร์ฟเวอร์แล้ว = ถูกลบจากอุปกรณ์อื่น
             const ids = new Set(rows.map(r=>r.id));
             Object.keys(snaps[k]).forEach(id=>{ if(!ids.has(id) && applyRemote(k, id, null, true)) touched = true; });
@@ -237,10 +252,17 @@
         if(!cfg.list){
           const local = opts.get(k);
           if(local === undefined || hash(local) === snaps[k][0]) continue;
-          const { data: rows, error: err } = await sb.rpc('mm_push', { p_coll: coll, p_rows: [{ id: k, data: local }], p_deletes: [] });
-          fail(err);
-          snaps[k] = entry(k, rows && rows[0] && hash(opts.get(k)) === hash(local) ? rows[0].data : local);
+          const sentDoc = clone(local);
+          inflight.add(k);
+          let rows;
+          try{
+            const res = await sb.rpc('mm_push', { p_coll: coll, p_rows: [{ id: k, data: sentDoc }], p_deletes: [] });
+            fail(res.error); rows = res.data;
+          }finally{ inflight.delete(k); }
+          const r0 = rows && rows[0];
+          snaps[k] = r0 ? entry(k, r0.data, r0.version) : entry(k, sentDoc);
           saveSnap(k);
+          if(drain(k) && opts.onData) opts.onData([k]);
           continue;
         }
         const snap = snaps[k], arr = getList(k);
@@ -255,18 +277,23 @@
             deltaOf(k).forEach(f=>{ if(typeof el[f] === 'number' && typeof s[1][f] === 'number') delta[f] = el[f] - s[1][f]; });
             if(Object.keys(delta).length) row.delta = delta;
           }
-          ups.push(row); sent[el.id] = { h, data: el };
+          row.data = clone(el);
+          ups.push(row); sent[el.id] = { h, data: row.data };
         });
         const dels = Object.keys(snap).filter(id=>!ids.has(id));
         if(!ups.length && !dels.length) continue;
         for(let i = 0; i === 0 || i < ups.length; i += 200){
-          const { data: rows, error: err } = await sb.rpc('mm_push', { p_coll: coll, p_rows: ups.slice(i, i + 200), p_deletes: i === 0 ? dels : [] });
-          fail(err);
+          inflight.add(k);
+          let rows;
+          try{
+            const res = await sb.rpc('mm_push', { p_coll: coll, p_rows: ups.slice(i, i + 200), p_deletes: i === 0 ? dels : [] });
+            fail(res.error); rows = res.data;
+          }finally{ inflight.delete(k); }
           if(i === 0) dels.forEach(id=>{ delete snap[id]; });
           // ใช้ค่าที่เซิร์ฟเวอร์คำนวณ (ฟิลด์ delta รวมของอุปกรณ์อื่นแล้ว)
           const cur = getList(k).slice(); let replaced = false;
           (rows || []).forEach(r=>{
-            snap[r.id] = entry(k, r.data);
+            snap[r.id] = entry(k, r.data, r.version);
             const j = cur.findIndex(x=>x.id === r.id);
             if(j < 0) return;
             const sentEl = sent[r.id];
@@ -279,7 +306,8 @@
             }
           });
           saveSnap(k);
-          if(replaced){ setList(k, cur); if(opts.onData) opts.onData([k]); }
+          if(replaced) setList(k, cur);
+          if((drain(k) || replaced) && opts.onData) opts.onData([k]);
         }
       }
     }
@@ -305,6 +333,7 @@
           if(phase === 'offline'){ phase = 'online'; error = ''; }
         }catch(e){
           console.error('MMSync flush', e);
+          keys.forEach(k=>{ if(queued[k] && drain(k) && opts.onData) opts.onData([k]); });
           phase = 'offline'; error = e.message;
           if(active) retryTimer = setTimeout(flush, backoff(retryN++));
         }finally{
@@ -401,7 +430,7 @@
           if(data && data.length){
             const arr = getList(k).slice(), i = arr.findIndex(x=>x.id === id);
             if(i >= 0) arr[i] = next; else arr.push(next);
-            if(snaps[k]){ snaps[k][id] = entry(k, next); saveSnap(k); }
+            if(snaps[k]){ snaps[k][id] = entry(k, next, cur.version + 1); saveSnap(k); }
             setList(k, arr);
             return next;
           }
@@ -416,7 +445,7 @@
         keys.forEach(k=>{
           if(kc(k) !== coll || snaps[k] === null) return;
           if(!opts.keys[k].list && id !== k) return;
-          if(applyRemote(k, id, row ? row.data : null, deleted)) changed.push(k);
+          if(applyRemote(k, id, row ? row.data : null, deleted, row ? row.version : null)) changed.push(k);
         });
         if(changed.length){ pending = countPending(); if(opts.onData) opts.onData(changed); }
       },
