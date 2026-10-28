@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>มากิน มาม่า - Back Office</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --bg: #FFF8F0; --surface: #FFFFFF; --surface-2: #FFF3E6; --line: #F0DFC8;
+    --cream: #2A1B0A; --cream-dim: #7A6A55; --chili: #E5352B; --chili-dim: #FCEAEA;
+    --yolk: #F5B400; --scallion: #C77700; --scallion-dim: #FFF3D9; --broth: #C99B5A;
+  }
+  *{box-sizing:border-box;}
+  body{ font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--cream); margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.mm-num,.mm-tabbtn,.mm-add-btn,.mm-brand{ font-family:'Kanit',sans-serif; }
+  .mm-header{ padding:14px 16px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .mm-brand{ font-size:22px; font-weight:700; color:var(--cream); }
+  .mm-brand span{ color:var(--chili); }
+  .mm-sub{ font-size:12.5px; color:var(--cream-dim); margin-top:2px; }
+  .mm-tabs{ display:flex; gap:2px; overflow-x:auto; padding:0 12px; background:var(--surface); border-bottom:1px solid var(--line); }
+  .mm-tabbtn{ background:none; border:none; color:var(--cream-dim); padding:14px 12px; font-size:14px; font-weight:600; border-bottom:2px solid transparent; cursor:pointer; white-space:nowrap; }
+  .mm-tabbtn.active{ color:var(--scallion); border-bottom-color:var(--scallion); }
+
+  /* Hamburger button */
+  .mm-hamburger{ background:none; border:1px solid var(--line); border-radius:8px; width:40px; height:40px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; padding:0; }
+  .mm-hamburger span{ display:block; width:20px; height:2px; background:var(--cream); border-radius:2px; transition:transform .2s, opacity .2s; }
+  .mm-hamburger[aria-expanded="true"] span:nth-child(1){ transform:translateY(6px) rotate(45deg); }
+  .mm-hamburger[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+  .mm-hamburger[aria-expanded="true"] span:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
+
+  /* Off-canvas drawer + scrim */
+  #mm-scrim{ position:fixed; inset:0; background:rgba(42,27,10,.45); opacity:0; pointer-events:none; transition:opacity .25s; z-index:40; }
+  #mm-scrim.open{ opacity:1; pointer-events:auto; }
+  #mm-drawer{ position:fixed; top:0; left:0; bottom:0; width:82%; max-width:300px; background:var(--surface); box-shadow:2px 0 18px rgba(42,27,10,.18); transform:translateX(-105%); transition:transform .25s ease; z-index:41; display:flex; flex-direction:column; overflow-y:auto; }
+  #mm-drawer.open{ transform:translateX(0); }
+  .mm-drawer-head{ display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .mm-drawer-close{ background:none; border:1px solid var(--line); border-radius:8px; width:32px; height:32px; font-size:16px; color:var(--cream-dim); cursor:pointer; }
+  #mm-drawer-nav{ padding:8px; }
+  .mm-drawer-item{ display:block; width:100%; text-align:left; background:none; border:none; color:var(--cream); padding:13px 12px; font-size:15px; font-weight:600; font-family:'Sarabun',sans-serif; border-radius:8px; cursor:pointer; }
+  .mm-drawer-item.active{ background:var(--scallion-dim); color:var(--scallion); }
+  .mm-drawer-item:not(.active):hover{ background:var(--surface-2); }
+  body.mm-drawer-locked{ overflow:hidden; }
+  .mm-body{ padding:16px 12px 90px; max-width:800px; margin:0 auto; }
+  .mm-section-title{ font-size:16px; font-weight:600; color:var(--cream-dim); margin:20px 2px 10px; }
+  .mm-section-title:first-child{ margin-top:0; }
+  .mm-hint{ font-size:13px; color:var(--cream-dim); margin:4px 2px 12px; line-height:1.5; }
+  
+  .mm-list-item{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(22,35,61,.04); }
+  .mm-li-main{ font-size:15px; font-weight:600; }
+  .mm-li-sub{ font-size:13px; color:var(--cream-dim); margin-top:4px; }
+  .mm-li-amount{ font-size:15px; font-family:'Kanit',sans-serif; font-weight:600; white-space:nowrap; }
+  .mm-badge{ font-size:11px; padding:3px 8px; border-radius:20px; font-weight:600; }
+  .mm-badge.low{ background:var(--chili-dim); color:var(--chili); }
+  .mm-badge.ok{ background:var(--scallion-dim); color:var(--scallion); }
+  .mm-del{ background:none; border:none; color:var(--chili); font-size:18px; cursor:pointer; padding:2px 6px; }
+  
+  .mm-form{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .mm-form-row{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+  .mm-field{ flex:1; min-width:150px; }
+  .mm-field label{ display:block; font-size:12px; font-weight:600; color:var(--cream-dim); margin-bottom:6px; }
+  .mm-field input, .mm-field select{ width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--cream); border-radius:6px; padding:10px; font-size:14px; font-family:'Sarabun',sans-serif; }
+  .mm-add-btn{ width:100%; background:var(--scallion); color:#fff; border:none; border-radius:8px; padding:12px; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px; }
+  .mm-add-btn.secondary{ background:var(--surface-2); color:var(--cream); border:1px solid var(--line); }
+
+  .mm-stat-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin-bottom:16px; }
+  .mm-stat{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(22,35,61,.04); }
+  .mm-stat-label{ font-size:13px; color:var(--cream-dim); }
+  .mm-stat-value{ font-size:24px; font-weight:700; font-family:'Kanit',sans-serif; margin-top:6px; }
+  
+  .mm-toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--cream); color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; opacity:0; pointer-events:none; transition:opacity .3s; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  .mm-toast.show{ opacity:1; }
+  .mm-empty{ text-align:center; padding:30px 10px; color:var(--cream-dim); font-size:14px; }
+  
+  .mm-lock{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; text-align:center; height:60vh; }
+  .mm-lock input{ width:180px; text-align:center; letter-spacing:8px; font-size:24px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:12px; margin:20px 0; }
+</style>
+</head>
+<body>
+<div id="mm-root">
+  <div class="mm-header">
+    <button id="mm-hamburger-btn" class="mm-hamburger" aria-expanded="false" aria-controls="mm-drawer" aria-label="เปิดเมนู">
+      <span></span><span></span><span></span>
+    </button>
+    <img src="" id="mm-header-logo" alt="Makin Mama" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;"/>
+    <div style="flex:1;">
+      <div class="mm-brand">มากิน <span>มาม่า</span></div>
+      <div class="mm-sub">ระบบหลังบ้าน (Back-office System)</div>
+    </div>
+    <div id="mm-user-badge"></div>
+  </div>
+
+  <div id="mm-scrim"></div>
+  <nav id="mm-drawer" aria-label="เมนูหลัก" aria-hidden="true">
+    <div class="mm-drawer-head">
+      <span class="mm-brand" style="font-size:18px;">เมนู</span>
+      <button id="mm-drawer-close-btn" class="mm-drawer-close" aria-label="ปิดเมนู">✕</button>
+    </div>
+    <div id="mm-drawer-nav"></div>
+  </nav>
+
+  <div class="mm-body" id="mm-body"></div>
+  <div class="mm-toast" id="mm-toast"></div>
+</div>
+
+<script>
+(function(){
+  const LOGO_SRC = "data:image/jpeg;base64,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";
+  const TABS = [
+    {id:'dash', label:'📊 แดชบอร์ด & พยากรณ์'},
+    {id:'reports', label:'📈 รายงาน'},
+    {id:'stock', label:'📦 จัดการสต๊อก & รับเข้า'},
+    {id:'costs', label:'💰 การเงิน'},
+    {id:'menu', label:'🍜 ตั้งค่าเมนู'},
+    {id:'crm', label:'❤️ ลูกค้า (CRM)'},
+    {id:'staff', label:'👥 พนักงาน'},
+    {id:'settings', label:'⚙️ ตั้งค่าระบบ'}
+  ];
+
+  const ROLES = ['เจ้าของร้าน','ผู้จัดการ','พนักงานครัว','พนักงานทั่วไป'];
+
+  let state = {
+    tab:'dash', loaded:false, unlocked:false, pinInput:'',
+    menu:[], toppings:[], costs:[], stock:[], waste:[], settings:{ownerPin:'', estimatedBowlsPerMonth:600}, orders:[],
+    currentUser:null, staff:[], accessLog:[], loginInput:'', loginRole:ROLES[0], timeLogs:[],
+    recipeCart:[], menuFormDraft:{name:'',price:'',portion:'',method:''}, editingMenuId:null, lastRefresh:null,
+    firebaseConfig:null, firebaseConnected:false, firebaseError:'', db:null,
+    customers:[], custFormDraft:{phone:'',name:'',tags:'',notes:''}, editingCustId:null,
+  };
+  const SYNC_KEYS = ['menu','toppings','costs','stock','waste','settings','orders','staff','accessLog','timeLogs','customers'];
+
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function baht(n){ return Number(n||0).toLocaleString('th-TH',{maximumFractionDigits:0}); }
+  function toast(msg){
+    const t = document.getElementById('mm-toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(()=>t.classList.remove('show'), 2000);
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // ใช้ localStorage เป็นแคช/ที่เก็บสำรองเสมอ และซิงค์ขึ้น Firebase Realtime Database ด้วยถ้าตั้งค่าไว้
+  function loadData(key, fallback){
+    try{ const r = localStorage.getItem('mm_bo_'+key); return r ? JSON.parse(r) : fallback; }
+    catch(e){ return fallback; }
+  }
+  function saveDataLocal(key, val){
+    try{ localStorage.setItem('mm_bo_'+key, JSON.stringify(val)); }
+    catch(e){ console.error('Local save failed', e); toast('ไม่สามารถบันทึกข้อมูลในเครื่องได้ (Storage Error)'); }
+  }
+  function saveData(key, val){
+    saveDataLocal(key, val);
+    if(state.firebaseConnected && state.db){
+      state.db.ref(key).set(val===undefined?null:val).catch(e=>{
+        console.error('Firebase save failed', key, e);
+        toast('ซิงค์กับ Firebase ไม่สำเร็จ (บันทึกในเครื่องไว้แล้ว): '+e.message);
+      });
+    }
+  }
+
+  // --- FIREBASE REALTIME DATABASE (ซิงค์ข้ามอุปกรณ์แบบเรียลไทม์) ---
+  let fbListeners = [];
+  function saveFirebaseConfig(cfg){ try{ localStorage.setItem('mm_bo_firebaseConfig', JSON.stringify(cfg)); }catch(e){} }
+  function loadFirebaseConfig(){ try{ const r = localStorage.getItem('mm_bo_firebaseConfig'); return r?JSON.parse(r):null; }catch(e){ return null; } }
+  function detachFirebaseListeners(){
+    fbListeners.forEach(({ref,cb})=>ref.off('value', cb));
+    fbListeners = [];
+  }
+  function connectFirebase(cfg){
+    try{
+      detachFirebaseListeners();
+      if(firebase.apps && firebase.apps.length){ firebase.apps.forEach(a=>a.delete()); }
+      firebase.initializeApp(cfg);
+      state.db = firebase.database();
+      state.firebaseError = '';
+      firebase.auth().signInAnonymously().catch(e=>{
+        state.firebaseError = 'เข้าสู่ระบบ Firebase Auth ไม่สำเร็จ: '+e.message+' (ตรวจสอบว่าเปิดใช้ Anonymous sign-in ในคอนโซล Firebase แล้ว)';
+        render();
+      });
+      SYNC_KEYS.forEach(key=>{
+        const ref = state.db.ref(key);
+        const cb = ref.on('value', snap=>{
+          const val = snap.val();
+          if(val===null){
+            // ยังไม่มีข้อมูลบน Firebase — ส่งข้อมูลในเครื่องขึ้นไปตั้งต้นให้
+            if(state[key] && (Array.isArray(state[key]) ? state[key].length>0 : Object.keys(state[key]).length>0)){
+              ref.set(state[key]).catch(e=>console.error('seed failed', key, e));
+            }
+          } else {
+            state[key] = val;
+            saveDataLocal(key, val);
+            if(state.loaded) render();
+          }
+        }, err=>{
+          state.firebaseError = 'อ่านข้อมูล Firebase ไม่สำเร็จ ('+key+'): '+err.message+' — ตรวจสอบ Realtime Database Rules';
+          state.firebaseConnected = false;
+          render();
+        });
+        fbListeners.push({ref, cb});
+      });
+      state.firebaseConnected = true;
+      render();
+    }catch(e){
+      state.firebaseConnected = false;
+      state.firebaseError = 'เชื่อมต่อ Firebase ไม่สำเร็จ: '+e.message;
+      console.error(e); render();
+    }
+  }
+  function disconnectFirebase(){
+    detachFirebaseListeners();
+    try{ if(firebase.apps && firebase.apps.length) firebase.apps.forEach(a=>a.delete()); }catch(e){}
+    state.db = null; state.firebaseConnected = false; state.firebaseError = '';
+    localStorage.removeItem('mm_bo_firebaseConfig');
+    state.firebaseConfig = null;
+    render(); toast('ยกเลิกการเชื่อมต่อ Firebase แล้ว (ใช้ข้อมูลในเครื่องนี้ต่อไป)');
+  }
+  function initFirebaseFromSaved(){
+    const cfg = loadFirebaseConfig();
+    if(!cfg || !cfg.databaseURL) return;
+    state.firebaseConfig = cfg;
+    connectFirebase(cfg);
+  }
+
+  function load(){
+    state.menu = loadData('menu', []);
+    // migrate legacy single-stockId menu items to recipe array format
+    state.menu.forEach(m=>{ if(!m.recipe){ m.recipe = m.stockId ? [{stockId:m.stockId, qty:1}] : []; } });
+    state.toppings = loadData('toppings', []);
+    state.costs = loadData('costs', []);
+    state.stock = loadData('stock', []);
+    state.waste = loadData('waste', []);
+    state.settings = loadData('settings', {ownerPin:'', estimatedBowlsPerMonth:600});
+    // จำลองข้อมูลออเดอร์สำหรับทดสอบวิเคราะห์สถิติ (ปกติมาจากระบบหน้าร้าน)
+    state.orders = loadData('orders', []); 
+    state.staff = loadData('staff', []);
+    state.accessLog = loadData('accessLog', []);
+    state.timeLogs = loadData('timeLogs', []);
+    state.customers = loadData('customers', []);
+    state.loaded = true;
+    const headerLogo = document.getElementById('mm-header-logo');
+    if(headerLogo) headerLogo.src = LOGO_SRC;
+    state.lastRefresh = new Date();
+    if(state.tab==='dash' || state.tab==='reports') startAutoRefresh();
+    initFirebaseFromSaved();
+    render();
+  }
+
+  let refreshTimer = null;
+  function startAutoRefresh(){
+    if(refreshTimer) return;
+    refreshTimer = setInterval(()=>{
+      if(state.firebaseConnected) return; // Firebase ส่งข้อมูลมาแบบเรียลไทม์อยู่แล้ว ไม่ต้อง poll ซ้ำ
+      // อ่านข้อมูลล่าสุดจาก localStorage ของเบราว์เซอร์นี้ซ้ำ เพื่อให้แดชบอร์ด/รายงานอัปเดตเองโดยไม่ต้องรีเฟรชหน้า
+      state.orders = loadData('orders', state.orders);
+      state.stock = loadData('stock', state.stock);
+      state.costs = loadData('costs', state.costs);
+      state.waste = loadData('waste', state.waste);
+      state.lastRefresh = new Date();
+      if(state.tab==='dash' || state.tab==='reports' || state.tab==='costs') render();
+    }, 6000);
+  }
+  function stopAutoRefresh(){ if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; } }
+  function manualRefresh(){
+    state.orders = loadData('orders', state.orders);
+    state.stock = loadData('stock', state.stock);
+    state.costs = loadData('costs', state.costs);
+    state.waste = loadData('waste', state.waste);
+    state.lastRefresh = new Date();
+    render(); toast('รีเฟรชข้อมูลล่าสุดแล้ว');
+  }
+  function setTab(id){
+    state.tab = id;
+    if(id==='dash' || id==='reports') startAutoRefresh(); else stopAutoRefresh();
+    closeDrawer();
+    render();
+  }
+
+  // --- HAMBURGER / OFF-CANVAS DRAWER NAV ---
+  function openDrawer(){
+    const btn = document.getElementById('mm-hamburger-btn');
+    const drawer = document.getElementById('mm-drawer');
+    const scrim = document.getElementById('mm-scrim');
+    if(!btn || !drawer || !scrim) return;
+    btn.setAttribute('aria-expanded','true');
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden','false');
+    scrim.classList.add('open');
+    document.body.classList.add('mm-drawer-locked');
+    const firstItem = drawer.querySelector('.mm-drawer-item, .mm-drawer-close');
+    if(firstItem) firstItem.focus();
+  }
+  function closeDrawer(){
+    const btn = document.getElementById('mm-hamburger-btn');
+    const drawer = document.getElementById('mm-drawer');
+    const scrim = document.getElementById('mm-scrim');
+    if(!btn || !drawer || !scrim) return;
+    const wasOpen = btn.getAttribute('aria-expanded')==='true';
+    btn.setAttribute('aria-expanded','false');
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden','true');
+    scrim.classList.remove('open');
+    document.body.classList.remove('mm-drawer-locked');
+    if(wasOpen) btn.focus();
+  }
+  function toggleDrawer(){
+    const btn = document.getElementById('mm-hamburger-btn');
+    if(btn && btn.getAttribute('aria-expanded')==='true') closeDrawer(); else openDrawer();
+  }
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){
+      const btn = document.getElementById('mm-hamburger-btn');
+      if(btn && btn.getAttribute('aria-expanded')==='true') closeDrawer();
+    }
+  });
+
+  // --- LOGIN / LOGOUT (บันทึกผู้เข้าใช้งานเพื่อความโปร่งใส) ---
+  function logAccess(action, user){
+    state.accessLog.push({id:uid(), action, name:user.name, role:user.role, time:new Date().toISOString()});
+    if(state.accessLog.length > 300) state.accessLog = state.accessLog.slice(-300); // กันไฟล์บวมไม่จำกัด
+    saveData('accessLog', state.accessLog);
+  }
+  function loginAs(name, role){
+    name = (name||'').trim();
+    if(!name) return toast('กรุณาใส่ชื่อผู้ใช้งาน');
+    role = role || ROLES[0];
+    state.currentUser = {name, role};
+    state.loginInput = '';
+    logAccess('login', state.currentUser);
+    render();
+    toast('เข้าสู่ระบบในชื่อ '+name);
+  }
+  function logout(){
+    if(state.currentUser) logAccess('logout', state.currentUser);
+    state.currentUser = null;
+    state.unlocked = false;
+    render();
+  }
+
+  function renderLogin(){
+    const staffTiles = state.staff.map(s=>`
+      <div class="mm-list-item" style="cursor:pointer;justify-content:center;text-align:center;flex-direction:column;gap:4px;" data-login-as="${escapeHtml(s.name)}|${escapeHtml(s.role)}">
+        <div class="mm-li-main">${escapeHtml(s.name)}</div>
+        <div class="mm-li-sub">${escapeHtml(s.role)}</div>
+      </div>`).join('');
+    const roleOpts = ROLES.map(r=>`<option value="${r}">${r}</option>`).join('');
+    return `
+      <div class="mm-lock" style="height:auto;padding:40px 16px;">
+        <img src="${LOGO_SRC}" alt="Makin Mama" style="width:100px;height:100px;border-radius:50%;object-fit:cover;box-shadow:0 2px 10px rgba(22,35,61,.18);margin-bottom:10px;"/>
+        <div style="font-size:20px;font-weight:700;font-family:'Kanit',sans-serif;">มากิน <span style="color:var(--chili);">มาม่า</span></div>
+      </div>
+      ${staffTiles?'<div class="mm-section-title">เลือกชื่อของคุณ</div>'+staffTiles:''}
+      <div class="mm-section-title">หรือเข้าสู่ระบบด้วยชื่อ</div>
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ชื่อผู้ใช้งาน</label><input id="login-name" value="${escapeHtml(state.loginInput)}" placeholder="ชื่อจริง"/></div>
+          <div class="mm-field"><label>ตำแหน่ง</label><select id="login-role">${roleOpts}</select></div>
+        </div>
+        <button class="mm-add-btn" id="mm-login-btn">เข้าสู่ระบบ</button>
+      </div>
+    `;
+  }
+
+  // --- STOCKS & INBOUND ---
+  function addStock(name, unit, qty, low, cost){
+    if(!name || !unit) return toast('กรุณากรอกข้อมูลให้ครบถ้วน');
+    state.stock.push({id:uid(), name, unit, qty:Number(qty)||0, lowThreshold:Number(low)||0, costPerUnit:Number(cost)||0, addedBy: state.currentUser?state.currentUser.name:null});
+    saveData('stock', state.stock); render(); toast('เพิ่มรายการสต๊อกแล้ว');
+  }
+  function deleteStock(id){ state.stock = state.stock.filter(s=>s.id!==id); saveData('stock', state.stock); render(); }
+  
+  function inboundStock(id, addedQty, totalCost){
+    const s = state.stock.find(x=>x.id===id); if(!s) return;
+    const qty = Number(addedQty); const cost = Number(totalCost);
+    if(isNaN(qty) || qty<=0 || isNaN(cost) || cost<0) return toast('กรอกตัวเลขไม่ถูกต้อง');
+    
+    // คำนวณ Moving Average Cost
+    const currentTotalValue = s.qty * s.costPerUnit;
+    const newTotalValue = currentTotalValue + cost;
+    s.qty += qty;
+    s.costPerUnit = newTotalValue / s.qty; 
+    
+    saveData('stock', state.stock); render(); toast('รับเข้าสต๊อกและปรับปรุงต้นทุนเฉลี่ยแล้ว');
+  }
+
+  function renderStock(){
+    const stockItems = state.stock.map(s=>{
+      const isLow = s.qty <= s.lowThreshold;
+      return `
+      <div class="mm-list-item">
+        <div>
+          <div class="mm-li-main">${escapeHtml(s.name)} <span class="mm-badge ${isLow?'low':'ok'}">${isLow?'ใกล้หมด':'ปกติ'}</span></div>
+          <div class="mm-li-sub">คงเหลือ ${s.qty} ${escapeHtml(s.unit)} · ต้นทุนเฉลี่ย ฿${s.costPerUnit.toFixed(2)}/${escapeHtml(s.unit)}${s.addedBy?' · เพิ่มโดย '+escapeHtml(s.addedBy):''}</div>
+        </div>
+        <button class="mm-del" data-del-stock="${s.id}">✕</button>
+      </div>`;
+    }).join('') || '<div class="mm-empty">ยังไม่มีรายการสต๊อก</div>';
+
+    const stockOpts = '<option value="">-- เลือกวัตถุดิบ --</option>' + state.stock.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+
+    return `
+      <div class="mm-section-title">รับเข้าสต๊อก (Inbound)</div>
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>วัตถุดิบ</label><select id="in-stock">${stockOpts}</select></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>จำนวนรับเข้า (แพ็ก/ห่อ)</label><input id="in-qty" type="number" placeholder="0" min="1"/></div>
+          <div class="mm-field"><label>ต้นทุนรวมที่ซื้อมา (บาท)</label><input id="in-cost" type="number" placeholder="0" min="0"/></div>
+        </div>
+        <button class="mm-add-btn" id="mm-inbound-btn">บันทึกรับเข้า (อัปเดตต้นทุนเฉลี่ยอัตโนมัติ)</button>
+      </div>
+
+      <div class="mm-section-title">รายการคลังสินค้าแบบแพ็กเกจ (Pre-portioned)</div>
+      ${stockItems}
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ชื่อวัตถุดิบ</label><input id="st-name" placeholder="เช่น เส้นมาม่ารสต้มยำ"/></div>
+          <div class="mm-field"><label>หน่วย</label><input id="st-unit" value="ห่อ" placeholder="ห่อ/แพ็ก"/></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ยอดเริ่มต้น</label><input id="st-qty" type="number" placeholder="0"/></div>
+          <div class="mm-field"><label>เตือนเมื่อเหลือต่ำกว่า</label><input id="st-low" type="number" placeholder="0"/></div>
+          <div class="mm-field"><label>ต้นทุน/หน่วย (฿)</label><input id="st-cost" type="number" placeholder="0"/></div>
+        </div>
+        <button class="mm-add-btn secondary" id="mm-add-stock-btn">+ เพิ่มรายการใหม่</button>
+      </div>
+    `;
+  }
+
+  // --- DASHBOARD & FORECASTING ---
+  // --- FINANCIAL MANAGEMENT (ต้นทุน + รายรับ-รายจ่าย + กำไรจริง) ---
+  const COST_CATEGORIES = ['ค่าเช่า','สาธารณูปโภค','ค่าแรง','วัตถุดิบ','ภาษี','ซ่อมบำรุง','อื่นๆ'];
+  function daysInMonth(dt){ return new Date(dt.getFullYear(), dt.getMonth()+1, 0).getDate(); }
+  function addCost(name, category, amount, frequency){
+    name=(name||'').trim(); const amt=Number(amount);
+    if(!name || !amt || amt<=0) return toast('กรุณากรอกชื่อและจำนวนเงินให้ถูกต้อง');
+    state.costs.push({id:uid(), name, category:category||'อื่นๆ', amount:amt, frequency:frequency||'รายเดือน', addedBy: state.currentUser?state.currentUser.name:null});
+    saveData('costs', state.costs); render(); toast('เพิ่มรายการค่าใช้จ่ายแล้ว');
+  }
+  function deleteCost(id){ state.costs = state.costs.filter(c=>c.id!==id); saveData('costs', state.costs); render(); }
+  function computeMonthlyFixedCosts(now){
+    const dim = daysInMonth(now);
+    let total=0; const breakdown={};
+    state.costs.forEach(c=>{
+      let monthly=0;
+      if(c.frequency==='รายเดือน') monthly=c.amount;
+      else if(c.frequency==='รายวัน') monthly=c.amount*dim;
+      else monthly=c.amount; // ครั้งเดียว: นับเข้าเดือนนี้เสมอเพื่อความง่าย
+      total+=monthly; breakdown[c.category]=(breakdown[c.category]||0)+monthly;
+    });
+    return {total, breakdown};
+  }
+  // คำนวณ COGS ของออเดอร์หนึ่งรายการ โดยจับคู่กับสูตรอาหารจริง (ถ้าไม่มีข้อมูลออเดอร์จากหน้าร้านจะได้ 0)
+  function computeOrderCogs(order){
+    let cogs=0;
+    (order.items||[]).forEach(it=>{
+      const m = state.menu.find(x=>x.id===it.refId);
+      if(m) cogs += computeMenuCost(m.recipe) * (it.qty||1);
+    });
+    return cogs;
+  }
+  function computeFinancials(now){
+    const todayStr = now.toDateString();
+    let revToday=0, revMonth=0, cogsToday=0, cogsMonth=0, cntToday=0, cntMonth=0;
+    state.orders.forEach(o=>{
+      const d = new Date(o.time);
+      const cogs = computeOrderCogs(o);
+      if(d.toDateString()===todayStr){ revToday+=o.total; cogsToday+=cogs; cntToday++; }
+      if(d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth()){ revMonth+=o.total; cogsMonth+=cogs; cntMonth++; }
+    });
+    const fixed = computeMonthlyFixedCosts(now);
+    return {
+      revToday, revMonth, cogsToday, cogsMonth, cntToday, cntMonth,
+      grossProfitMonth: revMonth-cogsMonth,
+      grossMarginMonth: revMonth>0 ? (revMonth-cogsMonth)/revMonth*100 : 0,
+      fixedCostsMonth: fixed.total, fixedBreakdown: fixed.breakdown,
+      netProfitMonth: revMonth - cogsMonth - fixed.total,
+      hasOrders: state.orders.length>0,
+    };
+  }
+  function computeStockForecast(days){
+    days = days||14;
+    const cutoff = Date.now() - days*24*60*60*1000;
+    const usage = {};
+    state.orders.forEach(o=>{
+      if(new Date(o.time).getTime() < cutoff) return;
+      (o.items||[]).forEach(it=>{
+        const m = state.menu.find(x=>x.id===it.refId); if(!m) return;
+        (m.recipe||[]).forEach(r=>{ usage[r.stockId] = (usage[r.stockId]||0) + r.qty*(it.qty||1); });
+      });
+    });
+    return state.stock.map(s=>{
+      const avgDaily = (usage[s.id]||0)/days;
+      const daysLeft = avgDaily>0 ? s.qty/avgDaily : null;
+      const reorderPoint = avgDaily*3;
+      return {stock:s, avgDaily, daysLeft, reorderPoint, needsReorder: avgDaily>0 && s.qty<=reorderPoint};
+    }).filter(f=>f.avgDaily>0).sort((a,b)=>a.daysLeft-b.daysLeft);
+  }
+
+  function renderCosts(){
+    const showFin = canSeeFinancials();
+    if(!showFin){
+      return `<div class="mm-empty">🔒 ข้อมูลการเงินแสดงเฉพาะเจ้าของร้าน หรือเมื่อปลดล็อก PIN แล้วในหน้าแดชบอร์ด</div>`;
+    }
+    const now = new Date();
+    const fin = computeFinancials(now);
+
+    const catEntries = Object.entries(fin.fixedBreakdown).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+    const maxCat = Math.max(1, ...catEntries.map(e=>e[1]));
+    const barsHtml = catEntries.map(([cat,val])=>`
+      <div style="margin:8px 0;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>${escapeHtml(cat)}</span><span>฿${baht(val)}</span></div>
+        <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden;"><div style="height:100%;background:var(--chili);width:${(val/maxCat*100).toFixed(0)}%;"></div></div>
+      </div>`).join('') || '<div class="mm-empty">ยังไม่มีรายการค่าใช้จ่ายคงที่</div>';
+
+    const costList = state.costs.map(c=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(c.name)}</div><div class="mm-li-sub">${escapeHtml(c.category)} · ${escapeHtml(c.frequency)}${c.addedBy?' · เพิ่มโดย '+escapeHtml(c.addedBy):''}</div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><div class="mm-li-amount">฿${baht(c.amount)}</div><button class="mm-del" data-del-cost="${c.id}">✕</button></div>
+      </div>`).join('') || '<div class="mm-empty">ยังไม่มีรายการค่าใช้จ่าย</div>';
+
+    // สมุดรายรับ-รายจ่าย: รวมออเดอร์ (รายรับ) + ค่าใช้จ่าย (รายจ่าย) เรียงตามเวลา
+    const ledgerRows = [
+      ...state.orders.map(o=>({type:'income', name:'ยอดขาย ('+((o.items||[]).length)+' รายการ)', amount:o.total, time:o.time})),
+      ...state.costs.map(c=>({type:'expense', name:c.name, amount:c.amount, time:new Date().toISOString()})),
+    ].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,40);
+    const ledgerHtml = ledgerRows.map(r=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${r.type==='income'?'💰':'📤'} ${escapeHtml(r.name)}</div><div class="mm-li-sub">${new Date(r.time).toLocaleString('th-TH')}</div></div>
+        <div class="mm-li-amount" style="color:${r.type==='income'?'var(--scallion)':'var(--chili)'}">${r.type==='income'?'+':'-'}฿${baht(r.amount)}</div>
+      </div>`).join('') || '<div class="mm-empty">ยังไม่มีรายการรายรับ-รายจ่าย</div>';
+
+    return `
+      <div class="mm-section-title">สรุปการเงิน (เดือนนี้)</div>
+      ${!fin.hasOrders ? '<div class="mm-hint">⚠ ยังไม่มีข้อมูลยอดขายเข้ามา (state.orders ว่าง) — ตัวเลขรายได้/COGS/กำไรด้านล่างจะเป็น 0 จนกว่าจะเชื่อมต่อกับระบบหน้าร้านที่บันทึกออเดอร์ลง localStorage คีย์ "mm_bo_orders" ในรูปแบบเดียวกัน</div>' : ''}
+      <div class="mm-stat-grid">
+        <div class="mm-stat"><div class="mm-stat-label">รายได้เดือนนี้</div><div class="mm-stat-value">฿${baht(fin.revMonth)}</div></div>
+        <div class="mm-stat"><div class="mm-stat-label">ต้นทุนวัตถุดิบ (COGS)</div><div class="mm-stat-value" style="color:var(--chili)">฿${baht(fin.cogsMonth)}</div></div>
+        <div class="mm-stat"><div class="mm-stat-label">ค่าใช้จ่ายคงที่/เดือน</div><div class="mm-stat-value" style="color:var(--chili)">฿${baht(fin.fixedCostsMonth)}</div></div>
+        <div class="mm-stat"><div class="mm-stat-label">กำไรขั้นต้น (Gross Margin)</div><div class="mm-stat-value" style="color:var(--scallion)">${fin.grossMarginMonth.toFixed(1)}%</div></div>
+      </div>
+      <div class="mm-stat" style="margin-bottom:16px;">
+        <div class="mm-stat-label">กำไรสุทธิโดยประมาณ (หลังหักค่าใช้จ่ายคงที่)</div>
+        <div class="mm-stat-value" style="color:${fin.netProfitMonth>=0?'var(--scallion)':'var(--chili)'}">฿${baht(fin.netProfitMonth)}</div>
+      </div>
+
+      <div class="mm-section-title">ค่าใช้จ่ายแยกตามหมวด (ต่อเดือน)</div>
+      ${barsHtml}
+
+      <div class="mm-section-title">รายการค่าใช้จ่าย</div>
+      ${costList}
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ชื่อรายการ</label><input id="cf-name" placeholder="เช่น ค่าเช่าร้าน"/></div>
+          <div class="mm-field"><label>หมวด</label><select id="cf-cat">${COST_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>จำนวนเงิน (฿)</label><input id="cf-amount" type="number" placeholder="0"/></div>
+          <div class="mm-field"><label>ความถี่</label><select id="cf-freq"><option value="รายเดือน">รายเดือน</option><option value="รายวัน">รายวัน</option><option value="ครั้งเดียว">ครั้งเดียว</option></select></div>
+        </div>
+        <button class="mm-add-btn" id="mm-add-cost-btn">+ เพิ่มค่าใช้จ่าย</button>
+      </div>
+
+      <div class="mm-section-title">สมุดรายรับ-รายจ่าย (Income/Expense Ledger)</div>
+      <div class="mm-hint">รวมยอดขาย (รายรับ) และค่าใช้จ่ายที่บันทึกไว้ (รายจ่าย) เรียงตามเวลาล่าสุด สำหรับตรวจสอบยอดย้อนหลัง</div>
+      ${ledgerHtml}
+    `;
+  }
+
+  function renderDash(){
+    const isOwner = state.currentUser && state.currentUser.role==='เจ้าของร้าน';
+    if(isOwner) state.unlocked = true;
+    if(state.settings.ownerPin && !state.unlocked){
+      return `
+        <div class="mm-lock">
+          <div style="font-size:40px;margin-bottom:10px;">🔒</div>
+          <div style="font-size:18px;font-weight:600;">พื้นที่เฉพาะเจ้าของร้าน</div>
+          <div class="mm-hint">กรุณาใส่รหัส PIN เพื่อดูข้อมูลการเงินและสถิติ</div>
+          <input id="mm-pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN"/>
+          <button class="mm-add-btn" style="width:180px;" id="mm-pin-submit">ปลดล็อก</button>
+        </div>`;
+    }
+
+    const now = new Date();
+    const fin = computeFinancials(now);
+    const forecast = computeStockForecast(14);
+    const forecastHtml = forecast.length ? forecast.map(f=>{
+      const statusColor = f.daysLeft<=3 ? 'var(--chili)' : (f.daysLeft<=7 ? 'var(--yolk)' : 'var(--scallion)');
+      return `
+        <div class="mm-list-item">
+          <div>
+            <div class="mm-li-main">${escapeHtml(f.stock.name)} ${f.needsReorder?'<span class="mm-badge low">ควรสั่งซื้อ</span>':''}</div>
+            <div class="mm-li-sub">ใช้เฉลี่ย (Moving Avg): ${f.avgDaily.toFixed(1)} ${escapeHtml(f.stock.unit)}/วัน</div>
+            <div class="mm-li-sub">จุดสั่งซื้อซ้ำ (Reorder Point): เมื่อเหลือ ${f.reorderPoint.toFixed(1)} ${escapeHtml(f.stock.unit)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="mm-li-sub">คาดว่าจะหมดใน</div>
+            <div class="mm-li-amount" style="color:${statusColor}">${f.daysLeft.toFixed(1)} วัน</div>
+          </div>
+        </div>`;
+    }).join('') : '<div class="mm-empty">ยังไม่มีข้อมูลยอดขายย้อนหลังพอสำหรับพยากรณ์ (ต้องมีออเดอร์จากระบบหน้าร้านเข้ามาก่อน)</div>';
+
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div class="mm-hint" style="margin:0;">${state.firebaseConnected ? '🟢 ซิงค์เรียลไทม์กับ Firebase (เห็นข้อมูลสดจากทุกอุปกรณ์)' : '🔄 อัปเดตทุก 6 วินาที (เฉพาะเบราว์เซอร์นี้ — ยังไม่ได้เชื่อมต่อ Firebase)'}${state.lastRefresh?' · ล่าสุด '+state.lastRefresh.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):''}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-refresh-now-btn">รีเฟรชตอนนี้</button>
+          ${state.settings.ownerPin?'<button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-relock-btn">🔒 ล็อกหน้าจอ</button>':''}
+        </div>
+      </div>
+      
+      <div class="mm-section-title">สรุปผลประกอบการ (เดือนนี้)</div>
+      ${!fin.hasOrders ? '<div class="mm-hint">⚠ ยังไม่มีข้อมูลยอดขายเข้ามา — ดูรายละเอียดเพิ่มเติมได้ที่แท็บ "💰 การเงิน"</div>' : ''}
+      <div class="mm-stat-grid">
+        <div class="mm-stat"><div class="mm-stat-label">ยอดขายสุทธิ</div><div class="mm-stat-value">฿${baht(fin.revMonth)}</div></div>
+        <div class="mm-stat"><div class="mm-stat-label">ต้นทุนวัตถุดิบ (COGS)</div><div class="mm-stat-value" style="color:var(--chili)">฿${baht(fin.cogsMonth)}</div></div>
+        <div class="mm-stat"><div class="mm-stat-label">กำไรขั้นต้น (Gross Margin)</div><div class="mm-stat-value" style="color:var(--scallion)">${fin.grossMarginMonth.toFixed(1)}%</div></div>
+      </div>
+
+      <div class="mm-section-title">พยากรณ์สต๊อก (Demand Forecasting)</div>
+      <div class="mm-hint">ระบบใช้สถิติค่าเฉลี่ยเคลื่อนที่ (Moving Average) จากการขายย้อนหลัง 14 วัน เพื่อวิเคราะห์ความน่าจะเป็นที่สต๊อกจะหมด และช่วยวางแผนรอบการสั่งซื้อล่วงหน้าอย่างเป็นระบบ</div>
+      ${forecastHtml}
+    `;
+  }
+
+  // --- RECIPE MANAGEMENT (สูตรอาหาร + คำนวณต้นทุนต่อเมนู) ---
+  function computeMenuCost(recipe){
+    return (recipe||[]).reduce((sum,r)=>{
+      const s = state.stock.find(x=>x.id===r.stockId);
+      return sum + (s ? r.qty*s.costPerUnit : 0);
+    }, 0);
+  }
+  function canSeeFinancials(){
+    return !!(state.currentUser && state.currentUser.role==='เจ้าของร้าน') || state.unlocked;
+  }
+  function resetMenuForm(){
+    state.recipeCart = [];
+    state.menuFormDraft = {name:'', price:'', portion:'', method:''};
+    state.editingMenuId = null;
+  }
+  function addRecipeLine(stockId, qty){
+    const s = state.stock.find(x=>x.id===stockId);
+    const qtyN = Number(qty);
+    if(!s || !qtyN || qtyN<=0) return toast('กรุณาเลือกวัตถุดิบและใส่จำนวนให้ถูกต้อง');
+    state.recipeCart.push({stockId, name:s.name, unit:s.unit, qty:qtyN});
+    render();
+  }
+  function removeRecipeLine(idx){ state.recipeCart.splice(idx,1); render(); }
+  function startEditMenu(id){
+    const m = state.menu.find(x=>x.id===id); if(!m) return;
+    state.editingMenuId = id;
+    state.menuFormDraft = {name:m.name, price:String(m.price), portion:m.portion||'', method:m.method||''};
+    state.recipeCart = (m.recipe||[]).map(r=>({...r, name:(state.stock.find(s=>s.id===r.stockId)||{}).name||'(ไม่พบวัตถุดิบ)', unit:(state.stock.find(s=>s.id===r.stockId)||{}).unit||''}));
+    render();
+  }
+  function cancelEditMenu(){ resetMenuForm(); render(); }
+  function submitMenu(name, price, portion, method){
+    name=(name||'').trim(); const priceN=Number(price);
+    if(!name || !priceN || priceN<=0) return toast('กรุณากรอกชื่อเมนูและราคาให้ถูกต้อง');
+    if(state.recipeCart.length===0) return toast('กรุณาเพิ่มวัตถุดิบในสูตรอย่างน้อย 1 รายการ');
+    const recipe = state.recipeCart.map(r=>({stockId:r.stockId, qty:r.qty}));
+    if(state.editingMenuId){
+      const m = state.menu.find(x=>x.id===state.editingMenuId);
+      if(m){ m.name=name; m.price=priceN; m.portion=portion.trim(); m.method=method.trim(); m.recipe=recipe; }
+      toast('แก้ไขสูตรอาหารแล้ว');
+    } else {
+      state.menu.push({id:uid(), name, price:priceN, portion:portion.trim(), method:method.trim(), recipe, addedBy: state.currentUser?state.currentUser.name:null});
+      toast('เพิ่มเมนู+สูตรอาหารแล้ว');
+    }
+    saveData('menu', state.menu);
+    resetMenuForm();
+    render();
+  }
+  function deleteMenu(id){
+    state.menu = state.menu.filter(m=>m.id!==id);
+    if(state.editingMenuId===id) resetMenuForm();
+    saveData('menu', state.menu); render();
+  }
+
+  function renderMenu(){
+    const showFin = canSeeFinancials();
+    const stockOpts = '<option value="">-- เลือกวัตถุดิบ --</option>' + state.stock.map(s=>`<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.unit)})</option>`).join('');
+
+    const menuItems = state.menu.map(m=>{
+      const cost = computeMenuCost(m.recipe);
+      const margin = m.price>0 ? ((m.price-cost)/m.price*100) : 0;
+      const ingredientLines = (m.recipe||[]).map(r=>{
+        const s = state.stock.find(x=>x.id===r.stockId);
+        return `${escapeHtml(s?s.name:'(ไม่พบวัตถุดิบ)')} ${r.qty} ${escapeHtml(s?s.unit:'')}`;
+      }).join(', ') || 'ยังไม่มีวัตถุดิบในสูตร';
+      return `
+      <div class="mm-list-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="mm-li-main">${escapeHtml(m.name)} ${m.portion?'<span class="mm-badge ok">'+escapeHtml(m.portion)+'</span>':''}</div>
+            <div class="mm-li-sub">วัตถุดิบ: ${ingredientLines}</div>
+            ${m.method?'<div class="mm-li-sub">วิธีทำ: '+escapeHtml(m.method)+'</div>':''}
+            ${m.addedBy?'<div class="mm-li-sub">เพิ่มโดย '+escapeHtml(m.addedBy)+'</div>':''}
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div class="mm-li-amount">฿${baht(m.price)}</div>
+            <div style="display:flex;gap:6px;">
+              <button class="mm-add-btn secondary" style="width:auto;padding:5px 10px;font-size:12px;margin:0;" data-edit-menu="${m.id}">แก้ไข</button>
+              <button class="mm-del" data-del-menu="${m.id}">✕</button>
+            </div>
+          </div>
+        </div>
+        ${showFin ? `
+        <div style="display:flex;gap:16px;border-top:1px dashed var(--line);padding-top:6px;margin-top:2px;">
+          <div class="mm-li-sub">ต้นทุน/จาน: <b style="color:var(--chili)">฿${cost.toFixed(2)}</b></div>
+          <div class="mm-li-sub">กำไร/จาน: <b style="color:var(--scallion)">฿${(m.price-cost).toFixed(2)} (${margin.toFixed(1)}%)</b></div>
+        </div>` : `<div class="mm-hint" style="margin:2px 0 0;">🔒 ต้นทุน/กำไร — เจ้าของร้านเท่านั้น</div>`}
+      </div>`;
+    }).join('') || '<div class="mm-empty">ยังไม่มีเมนู</div>';
+
+    const recipeCartHtml = state.recipeCart.map((r,idx)=>`
+      <div class="mm-list-item" style="padding:8px 12px;">
+        <div class="mm-li-sub" style="margin:0;">${escapeHtml(r.name)} — ${r.qty} ${escapeHtml(r.unit)}</div>
+        <button class="mm-del" data-rm-recipe-line="${idx}">✕</button>
+      </div>`).join('') || '<div class="mm-empty" style="padding:10px 0;">ยังไม่มีวัตถุดิบในสูตรนี้</div>';
+
+    const draft = state.menuFormDraft;
+    const draftCost = computeMenuCost(state.recipeCart);
+    const draftPrice = Number(draft.price)||0;
+
+    return `
+      <div class="mm-section-title">สูตรอาหาร & ต้นทุนต่อเมนู (Recipe Management)</div>
+      <div class="mm-hint">เก็บสูตรอาหารแบบละเอียด (วัตถุดิบ ปริมาณ ขนาดพอร์ตชั่น วิธีทำ) เพื่อมาตรฐานเดียวกันทุกครั้งที่ทำ และคำนวณต้นทุนต่อจานให้อัตโนมัติจากราคาวัตถุดิบในสต๊อก</div>
+      ${menuItems}
+
+      <div class="mm-section-title">${state.editingMenuId?'แก้ไขเมนู':'เพิ่มเมนูใหม่'}</div>
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ชื่อเมนู</label><input id="mf-name" value="${escapeHtml(draft.name)}" placeholder="ชื่อรายการ"/></div>
+          <div class="mm-field"><label>ราคาขาย (฿)</label><input id="mf-price" type="number" value="${escapeHtml(draft.price)}" placeholder="0"/></div>
+          <div class="mm-field"><label>ขนาดพอร์ตชั่น</label><input id="mf-portion" value="${escapeHtml(draft.portion)}" placeholder="เช่น 1 ชาม / 300 กรัม"/></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>วิธีทำ / ขั้นตอน (SOP)</label><textarea id="mf-method" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:'Sarabun',sans-serif;font-size:14px;" placeholder="เช่น 1. ต้มน้ำ 2. ใส่เส้น 3. ...">${escapeHtml(draft.method)}</textarea></div>
+        </div>
+
+        <div class="mm-hint" style="margin:4px 2px;">วัตถุดิบในสูตร</div>
+        ${recipeCartHtml}
+        <div class="mm-form-row">
+          <div class="mm-field"><label>วัตถุดิบ</label><select id="rl-stock">${stockOpts}</select></div>
+          <div class="mm-field" style="max-width:110px;"><label>จำนวน/หน่วย</label><input id="rl-qty" type="number" placeholder="0"/></div>
+        </div>
+        <button class="mm-add-btn secondary" id="mm-add-recipeline-btn">+ เพิ่มวัตถุดิบในสูตร</button>
+
+        ${showFin ? `<div class="mm-hint" style="margin-top:10px;">ต้นทุนรวมของสูตรนี้ (ประมาณการ): <b style="color:var(--chili)">฿${draftCost.toFixed(2)}</b>${draftPrice>0?' · กำไร/จาน: <b style="color:var(--scallion)">฿'+(draftPrice-draftCost).toFixed(2)+'</b>':''}</div>` : ''}
+
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="mm-add-btn" id="mm-submit-menu-btn">${state.editingMenuId?'บันทึกการแก้ไข':'+ เพิ่มเมนู'}</button>
+          ${state.editingMenuId?'<button class="mm-add-btn secondary" id="mm-cancel-edit-menu-btn">ยกเลิก</button>':''}
+        </div>
+      </div>
+    `;
+  }
+
+  // --- REPORTING & ANALYTICS (รายงานยอดขาย/สต๊อก/ต้นทุนอาหาร/พนักงาน) ---
+  function reportSalesByDay(days){
+    days = days||14;
+    const map = {};
+    state.orders.forEach(o=>{
+      const d = new Date(o.time);
+      if((Date.now()-d.getTime()) > days*86400000) return;
+      const key = d.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+      map[key] = (map[key]||0) + o.total;
+    });
+    return map;
+  }
+  function reportTopMenus(limit){
+    const count = {};
+    state.orders.forEach(o=>(o.items||[]).forEach(it=>{
+      const key = it.name || (state.menu.find(m=>m.id===it.refId)||{}).name || 'ไม่ทราบชื่อ';
+      count[key] = (count[key]||0) + (it.qty||1);
+    }));
+    return Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, limit||5);
+  }
+  function reportFoodCost(){
+    return state.menu.map(m=>{
+      const cost = computeMenuCost(m.recipe);
+      const pct = m.price>0 ? (cost/m.price*100) : 0;
+      return {name:m.name, price:m.price, cost, pct, margin:m.price-cost};
+    }).sort((a,b)=>b.pct-a.pct);
+  }
+  function reportStockMovement(days){
+    days = days||30;
+    const cutoff = Date.now() - days*86400000;
+    const inbound = {}; // จากการ "รับเข้า" — เราไม่ได้เก็บ log inbound แยก จึงประมาณจาก waste/ออเดอร์เท่าที่มี
+    const used = {}; const wasted = {};
+    state.orders.forEach(o=>{
+      if(new Date(o.time).getTime() < cutoff) return;
+      (o.items||[]).forEach(it=>{
+        const m = state.menu.find(x=>x.id===it.refId); if(!m) return;
+        (m.recipe||[]).forEach(r=>{ used[r.stockId]=(used[r.stockId]||0)+r.qty*(it.qty||1); });
+      });
+    });
+    state.waste.forEach(w=>{
+      if(new Date(w.date||w.time||Date.now()).getTime() < cutoff) return;
+      wasted[w.stockId] = (wasted[w.stockId]||0) + (w.qty||0);
+    });
+    return state.stock.map(s=>({
+      stock:s, used: used[s.id]||0, wasted: wasted[s.id]||0,
+    }));
+  }
+  function reportStaffPerformance(now){
+    now = now || new Date();
+    // นับยอดขายต่อพนักงาน ถ้าออเดอร์มีข้อมูลผู้ขาย (cashierName) จากระบบหน้าร้าน
+    const salesByStaff = {};
+    state.orders.forEach(o=>{
+      const d = new Date(o.time);
+      if(d.getFullYear()!==now.getFullYear() || d.getMonth()!==now.getMonth()) return;
+      if(!o.cashierName) return;
+      salesByStaff[o.cashierName] = (salesByStaff[o.cashierName]||0) + o.total;
+    });
+    const hasSalesAttribution = Object.keys(salesByStaff).length>0;
+    const list = state.staff.map(s=>({
+      name:s.name, role:s.role,
+      hours: computeMonthlyHours(s.name, now),
+      sales: salesByStaff[s.name]||0,
+    })).sort((a,b)=>b.hours-a.hours);
+    return [list, hasSalesAttribution];
+  }
+  function exportReportsCsv(){
+    const now = new Date();
+    let rows = [['ประเภทรายงาน','รายการ','รายละเอียด','จำนวน/มูลค่า','วันที่']];
+    Object.entries(reportSalesByDay(60)).forEach(([day,total])=>rows.push(['ยอดขายรายวัน', day, '', total, '']));
+    reportTopMenus(999).forEach(([name,qty])=>rows.push(['เมนูขายดี', name, '', qty, '']));
+    reportFoodCost().forEach(r=>rows.push(['ต้นทุนอาหาร', r.name, 'ราคา '+r.price+' ต้นทุน '+r.cost.toFixed(2), r.pct.toFixed(1)+'%', '']));
+    state.staff.forEach(s=>rows.push(['พนักงาน', s.name, s.role, computeMonthlyHours(s.name,now).toFixed(1)+' ชม.', '']));
+    const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download = `makin-mama-reports-${now.getFullYear()}-${now.getMonth()+1}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    toast('ส่งออกรายงานเป็น CSV แล้ว');
+  }
+
+  function renderReports(){
+    if(!isManager()){
+      return `<div class="mm-empty">🔒 หน้ารายงานสำหรับเจ้าของร้านและผู้จัดการเท่านั้น</div>`;
+    }
+    const showFin = canSeeFinancials();
+    const salesByDay = reportSalesByDay(14);
+    const salesEntries = Object.entries(salesByDay);
+    const maxSale = Math.max(1, ...salesEntries.map(e=>e[1]));
+    const salesBars = salesEntries.length ? salesEntries.map(([day,total])=>`
+      <div style="margin:8px 0;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>${day}</span><span>฿${baht(total)}</span></div>
+        <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden;"><div style="height:100%;background:var(--scallion);width:${(total/maxSale*100).toFixed(0)}%;"></div></div>
+      </div>`).join('') : '<div class="mm-empty">ยังไม่มีข้อมูลยอดขาย</div>';
+
+    const topMenus = reportTopMenus(5);
+    const topMenusHtml = topMenus.length ? topMenus.map(([name,qty],i)=>`
+      <div class="mm-list-item"><div class="mm-li-main">${i+1}. ${escapeHtml(name)}</div><div class="mm-li-amount">${qty} ครั้ง</div></div>`).join('') : '<div class="mm-empty">ยังไม่มีข้อมูล</div>';
+
+    const foodCost = reportFoodCost();
+    const foodCostHtml = showFin ? (foodCost.length ? foodCost.map(r=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(r.name)}</div><div class="mm-li-sub">ราคาขาย ฿${baht(r.price)} · ต้นทุน ฿${r.cost.toFixed(2)}</div></div>
+        <div class="mm-li-amount" style="color:${r.pct>40?'var(--chili)':'var(--scallion)'}">${r.pct.toFixed(1)}% food cost</div>
+      </div>`).join('') : '<div class="mm-empty">ยังไม่มีเมนู</div>') : '<div class="mm-empty">🔒 ต้นทุนอาหาร — เจ้าของร้านเท่านั้น</div>';
+
+    const stockMove = reportStockMovement(30);
+    const stockMoveHtml = stockMove.length ? stockMove.map(r=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(r.stock.name)}</div><div class="mm-li-sub">คงเหลือปัจจุบัน ${r.stock.qty} ${escapeHtml(r.stock.unit)}</div></div>
+        <div style="text-align:right;">
+          <div class="mm-li-sub">ใช้ไป 30 วัน: ${r.used.toFixed(1)} ${escapeHtml(r.stock.unit)}</div>
+          <div class="mm-li-sub" style="color:var(--chili)">ของเสีย: ${r.wasted.toFixed(1)} ${escapeHtml(r.stock.unit)}</div>
+        </div>
+      </div>`).join('') : '<div class="mm-empty">ยังไม่มีวัตถุดิบ</div>';
+
+    const [staffPerf, hasSalesAttribution] = reportStaffPerformance(new Date());
+    const staffPerfHtml = staffPerf.length ? staffPerf.map(s=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(s.name)}</div><div class="mm-li-sub">${escapeHtml(s.role)}</div></div>
+        <div style="text-align:right;">
+          <div class="mm-li-sub">${s.hours.toFixed(1)} ชม. เดือนนี้</div>
+          ${hasSalesAttribution?'<div class="mm-li-sub">ยอดขาย ฿'+baht(s.sales)+'</div>':''}
+        </div>
+      </div>`).join('') : '<div class="mm-empty">ยังไม่มีรายชื่อพนักงาน</div>';
+
+    return `
+      <div style="display:flex;justify-content:flex-end;"><button class="mm-add-btn secondary" style="width:auto;padding:6px 12px;font-size:12px;" id="mm-export-reports-btn">⤓ ส่งออกรายงานเป็น CSV</button></div>
+
+      <div class="mm-section-title">รายงานยอดขาย (14 วันล่าสุด)</div>
+      ${salesBars}
+
+      <div class="mm-section-title">เมนูขายดี (Top 5)</div>
+      ${topMenusHtml}
+
+      <div class="mm-section-title">รายงานต้นทุนอาหาร (Food Cost %)</div>
+      <div class="mm-hint">Food cost % = ต้นทุนวัตถุดิบ ÷ ราคาขาย — ยิ่งสูงยิ่งกำไรต่อจานน้อยลง โดยทั่วไปร้านอาหารควรอยู่ราว 25-35%</div>
+      ${foodCostHtml}
+
+      <div class="mm-section-title">การเคลื่อนไหวสินค้าคงคลัง (30 วันล่าสุด)</div>
+      ${stockMoveHtml}
+      <div class="mm-hint">หมายเหตุ: ยอด "รับเข้า" ไม่ได้แสดงแยกในรายงานนี้เนื่องจากยังไม่มีการเก็บ log การรับเข้าแบบละเอียด (ปัจจุบันหน้ารับเข้าสต๊อกอัปเดตแค่ยอดคงเหลือ+ต้นทุนเฉลี่ยเท่านั้น) — บอกได้ถ้าต้องการให้เพิ่ม log การรับเข้าแบบละเอียดสำหรับรายงานนี้</div>
+
+      <div class="mm-section-title">รายงานการดำเนินงานของพนักงาน</div>
+      ${!hasSalesAttribution?'<div class="mm-hint">⚠ ยังไม่มีข้อมูลยอดขายที่ระบุผู้ขาย (cashierName) จากระบบหน้าร้าน จึงแสดงได้แค่ชั่วโมงทำงาน ยังไม่มียอดขายต่อคน</div>':''}
+      ${staffPerfHtml}
+    `;
+  }
+
+  // --- CRM (ลูกค้าสัมพันธ์: ยอดซื้อประจำ / ลูกค้าประจำ / เมนูที่ชื่นชอบ / ช่วงเวลาที่มา) ---
+  function resetCustForm(){ state.custFormDraft = {phone:'',name:'',tags:'',notes:''}; state.editingCustId = null; }
+  function startEditCustomer(id){
+    const c = state.customers.find(x=>x.id===id); if(!c) return;
+    state.editingCustId = id;
+    state.custFormDraft = {phone:c.phone, name:c.name||'', tags:(c.tags||[]).join(', '), notes:c.notes||''};
+    render();
+  }
+  function cancelEditCustomer(){ resetCustForm(); render(); }
+  function submitCustomer(phone, name, tagsStr, notes){
+    phone=(phone||'').trim();
+    if(!phone) return toast('กรุณากรอกเบอร์โทรลูกค้า');
+    const tags = (tagsStr||'').split(',').map(t=>t.trim()).filter(Boolean);
+    if(state.editingCustId){
+      const c = state.customers.find(x=>x.id===state.editingCustId);
+      if(c){ c.phone=phone; c.name=(name||'').trim(); c.tags=tags; c.notes=(notes||'').trim(); }
+      toast('แก้ไขข้อมูลลูกค้าแล้ว');
+    } else {
+      if(state.customers.some(c=>c.phone===phone)) return toast('มีเบอร์นี้ในระบบแล้ว');
+      state.customers.push({id:uid(), phone, name:(name||'').trim(), tags, notes:(notes||'').trim(), addedBy: state.currentUser?state.currentUser.name:null});
+      toast('เพิ่มลูกค้าใหม่แล้ว');
+    }
+    saveData('customers', state.customers);
+    resetCustForm(); render();
+  }
+  function deleteCustomer(id){
+    state.customers = state.customers.filter(c=>c.id!==id);
+    if(state.editingCustId===id) resetCustForm();
+    saveData('customers', state.customers); render();
+  }
+  // คำนวณสถิติของลูกค้าคนหนึ่งจากออเดอร์จริง (ต้องมี order.customerPhone จากระบบหน้าร้าน)
+  function computeCustomerStats(phone){
+    const orders = state.orders.filter(o=>o.customerPhone===phone);
+    const totalSpend = orders.reduce((s,o)=>s+o.total, 0);
+    const visitCount = orders.length;
+    const lastVisit = orders.length ? orders.map(o=>new Date(o.time)).sort((a,b)=>b-a)[0] : null;
+    const itemCount = {};
+    orders.forEach(o=>(o.items||[]).forEach(it=>{ itemCount[it.name]=(itemCount[it.name]||0)+(it.qty||1); }));
+    const favoriteMenu = Object.entries(itemCount).sort((a,b)=>b[1]-a[1])[0];
+    return {orders, totalSpend, visitCount, lastVisit, favoriteMenu: favoriteMenu?favoriteMenu[0]:null, avgSpend: visitCount>0?totalSpend/visitCount:0};
+  }
+  function computePeakHours(){
+    const byHour = new Array(24).fill(0);
+    state.orders.forEach(o=>{ byHour[new Date(o.time).getHours()]++; });
+    return byHour;
+  }
+  const REGULAR_VISIT_THRESHOLD = 5;
+
+  function renderCrm(){
+    const showFin = canSeeFinancials();
+    const hasCustomerOrders = state.orders.some(o=>!!o.customerPhone);
+
+    const custRows = state.customers.map(c=>{
+      const stats = computeCustomerStats(c.phone);
+      const isRegular = stats.visitCount >= REGULAR_VISIT_THRESHOLD;
+      return `
+      <div class="mm-list-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="mm-li-main">${escapeHtml(c.name||'(ไม่ระบุชื่อ)')} ${isRegular?'<span class="mm-badge ok">ลูกค้าประจำ</span>':''}</div>
+            <div class="mm-li-sub">${escapeHtml(c.phone)}${c.tags&&c.tags.length?' · '+c.tags.map(t=>escapeHtml(t)).join(', '):''}</div>
+            ${c.notes?'<div class="mm-li-sub">📝 '+escapeHtml(c.notes)+'</div>':''}
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="mm-add-btn secondary" style="width:auto;padding:5px 10px;font-size:12px;margin:0;" data-edit-cust="${c.id}">แก้ไข</button>
+            <button class="mm-del" data-del-cust="${c.id}">✕</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:6px;">
+          <div class="mm-li-sub">มาแล้ว <b>${stats.visitCount}</b> ครั้ง</div>
+          <div class="mm-li-sub">เมนูโปรด: <b>${stats.favoriteMenu?escapeHtml(stats.favoriteMenu):'ยังไม่มีข้อมูล'}</b></div>
+          <div class="mm-li-sub">มาล่าสุด: <b>${stats.lastVisit?stats.lastVisit.toLocaleDateString('th-TH'):'ยังไม่มีข้อมูล'}</b></div>
+          ${showFin ? '<div class="mm-li-sub">ยอดซื้อสะสม: <b style="color:var(--scallion);">฿'+baht(stats.totalSpend)+'</b></div>' : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div class="mm-empty">ยังไม่มีรายชื่อลูกค้า</div>';
+
+    const peakHours = computePeakHours();
+    const maxHour = Math.max(1, ...peakHours);
+    const peakHtml = state.orders.length ? peakHours.map((c,h)=>c>0?`
+      <div style="margin:4px 0;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;"><span>${String(h).padStart(2,'0')}:00</span><span>${c} บิล</span></div>
+        <div style="background:var(--surface-2);border-radius:6px;height:6px;overflow:hidden;"><div style="height:100%;background:var(--yolk);width:${(c/maxHour*100).toFixed(0)}%;"></div></div>
+      </div>`:'').join('') : '<div class="mm-empty">ยังไม่มีข้อมูลยอดขาย</div>';
+
+    const draft = state.custFormDraft;
+
+    return `
+      <div class="mm-section-title">ฐานข้อมูลลูกค้า</div>
+      ${!hasCustomerOrders?'<div class="mm-hint">⚠ ยังไม่มีออเดอร์ที่ระบุเบอร์ลูกค้า (customerPhone) จากระบบหน้าร้าน ตัวเลข "มาแล้วกี่ครั้ง / เมนูโปรด / ยอดซื้อสะสม" จะยังเป็น 0 จนกว่าจะเชื่อมกับระบบหน้าร้านที่เก็บเบอร์ลูกค้าตอนขาย — ตอนนี้ใช้บันทึกรายชื่อ+แท็ก+โน้ตลูกค้าได้ก่อน</div>':''}
+      ${custRows}
+
+      <div class="mm-section-title">${state.editingCustId?'แก้ไขข้อมูลลูกค้า':'เพิ่มลูกค้าใหม่'}</div>
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>เบอร์โทร</label><input id="cust-phone" value="${escapeHtml(draft.phone)}" placeholder="08xxxxxxxx"/></div>
+          <div class="mm-field"><label>ชื่อลูกค้า</label><input id="cust-name" value="${escapeHtml(draft.name)}" placeholder="ชื่อเล่น/ชื่อจริง"/></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>แท็ก (คั่นด้วยจุลภาค)</label><input id="cust-tags" value="${escapeHtml(draft.tags)}" placeholder="เช่น ทานเผ็ด, สั่งประจำทุกเที่ยง"/></div>
+        </div>
+        <div class="mm-form-row"><div class="mm-field"><label>โน้ต</label><input id="cust-notes" value="${escapeHtml(draft.notes)}" placeholder="เช่น แพ้กุ้ง, ชอบนั่งริมหน้าต่าง"/></div></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="mm-add-btn" id="mm-submit-cust-btn">${state.editingCustId?'บันทึกการแก้ไข':'+ เพิ่มลูกค้า'}</button>
+          ${state.editingCustId?'<button class="mm-add-btn secondary" id="mm-cancel-edit-cust-btn">ยกเลิก</button>':''}
+        </div>
+      </div>
+
+      <div class="mm-section-title">ช่วงเวลาที่ลูกค้ามาบ่อย (ทุกออเดอร์)</div>
+      <div class="mm-hint">ใช้วางแผนกำลังคนต่อช่วงเวลา หรือเลือกช่วงจัดโปรโมชั่นดึงลูกค้าเข้าร้านช่วงที่คนน้อย</div>
+      ${peakHtml}
+
+      <div class="mm-section-title">แนวคิดการตลาด (Marketing Ideas)</div>
+      <div class="mm-hint">ใช้แท็กลูกค้าด้านบนแบ่งกลุ่ม เช่น ส่งโปรโมชั่นเฉพาะกลุ่ม "ลูกค้าประจำ" หรือทำเมนูพิเศษตามที่จดไว้ในโน้ต — การส่งข้อความจริงผ่าน LINE OA/SMS ยังไม่ได้เชื่อมต่อในไฟล์นี้ เพราะต้องมี LINE Messaging API/SMS Gateway และโค้ดฝั่งเซิร์ฟเวอร์เพิ่มเติม บอกได้ถ้าต้องการต่อยอดส่วนนี้จริงจัง</div>
+    `;
+  }
+
+  // --- SETTINGS (PIN, พนักงาน, ประวัติการเข้าใช้งาน, การเชื่อมต่อภายนอก) ---
+  function isManager(){
+    return !!(state.currentUser && (state.currentUser.role==='เจ้าของร้าน' || state.currentUser.role==='ผู้จัดการ'));
+  }
+
+  function renderSettings(){
+    if(!isManager()){
+      return `<div class="mm-empty">🔒 หน้านี้สำหรับเจ้าของร้านและผู้จัดการเท่านั้น</div>`;
+    }
+    return `
+      <div class="mm-section-title">ตั้งค่าความเป็นส่วนตัว (Privacy Settings)</div>
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ตั้ง PIN ปลดล็อกแดชบอร์ด (4-6 หลัก)</label><input id="set-pin" type="password" inputmode="numeric" maxlength="6" value="${escapeHtml(state.settings.ownerPin)}" placeholder="เว้นว่างไว้หากไม่ต้องการล็อก"/></div>
+        </div>
+        <button class="mm-add-btn" id="mm-save-pin-btn">บันทึก PIN เจ้าของร้าน</button>
+      </div>
+      <div class="mm-hint">PIN นี้ใช้ป้องกันไม่ให้พนักงานเข้าถึงข้อมูลต้นทุน สถิติ และกำไรในหน้าแดชบอร์ดได้</div>
+
+      <div class="mm-section-title">🔥 Firebase Realtime Database (ซิงค์ข้อมูลข้ามอุปกรณ์แบบเรียลไทม์)</div>
+      <div class="mm-form">
+        <div class="mm-li-main" style="margin-bottom:8px;">
+          สถานะ: ${state.firebaseConnected ? '<span style="color:var(--scallion);">🟢 เชื่อมต่อแล้ว — ข้อมูลจะซิงค์กับทุกอุปกรณ์ที่ใช้ config เดียวกันแบบเรียลไทม์</span>' : '<span style="color:var(--cream-dim);">🔴 ยังไม่ได้เชื่อมต่อ (ใช้ข้อมูลในเบราว์เซอร์นี้เท่านั้น)</span>'}
+        </div>
+        ${state.firebaseError ? '<div class="mm-hint" style="color:var(--chili);">⚠ '+escapeHtml(state.firebaseError)+'</div>' : ''}
+        ${!state.firebaseConnected ? `
+        <div class="mm-form-row">
+          <div class="mm-field"><label>apiKey</label><input id="fb-apikey" placeholder="AIzaSy..."/></div>
+          <div class="mm-field"><label>authDomain</label><input id="fb-authdomain" placeholder="your-project.firebaseapp.com"/></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>databaseURL</label><input id="fb-dburl" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"/></div>
+          <div class="mm-field"><label>projectId</label><input id="fb-projectid" placeholder="your-project-id"/></div>
+        </div>
+        <div class="mm-form-row">
+          <div class="mm-field"><label>storageBucket (ไม่บังคับ)</label><input id="fb-bucket" placeholder="your-project.appspot.com"/></div>
+          <div class="mm-field"><label>messagingSenderId (ไม่บังคับ)</label><input id="fb-sender" placeholder="123456789"/></div>
+          <div class="mm-field"><label>appId (ไม่บังคับ)</label><input id="fb-appid" placeholder="1:123:web:abc"/></div>
+        </div>
+        <button class="mm-add-btn" id="mm-connect-firebase-btn">🔥 เชื่อมต่อ Firebase</button>
+        ` : `<button class="mm-add-btn secondary" id="mm-disconnect-firebase-btn">ยกเลิกการเชื่อมต่อ</button>`}
+      </div>
+      <div class="mm-hint">
+        <b>วิธีเริ่มต้น:</b> ไปที่ <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> → สร้างโปรเจกต์ใหม่ (ฟรี) → เปิด "Realtime Database" → คัดลอกค่า config มาใส่ที่นี่ → ต้องกรอก config ชุดเดียวกันในทุกอุปกรณ์ที่ต้องการให้เห็นข้อมูลร่วมกัน (เครื่อง POS ที่ร้าน + มือถือเจ้าของร้าน)<br/><br/>
+        <b>⚠ สำคัญมากเรื่องความปลอดภัย:</b> ต้องไปตั้งค่า Realtime Database Rules ในคอนโซล Firebase เป็นอย่างน้อยดังนี้ ไม่เช่นนั้นข้อมูลร้าน (ต้นทุน ค่าแรง กำไร) จะเปิดเผยต่อสาธารณะ:<br/>
+        <code style="display:block;background:var(--surface-2);padding:8px;border-radius:6px;margin-top:4px;white-space:pre;">{"rules": {".read": "auth != null", ".write": "auth != null"}}</code>
+        และต้องไปเปิดใช้ "Anonymous" sign-in ใน Firebase Authentication → Sign-in method ด้วย (ระบบนี้ล็อกอินแบบไม่ระบุตัวตนให้อัตโนมัติเพื่อผ่านกฎด้านบน) — นี่เป็นความปลอดภัยระดับพื้นฐานเท่านั้น ถ้าต้องการล็อกด้วยบัญชีจริงของแต่ละคน แจ้งได้ จะช่วยต่อยอด Firebase Authentication แบบเต็มรูปแบบให้
+      </div>
+
+      <div class="mm-section-title">การเชื่อมต่อภายนอกอื่นๆ</div>
+      <div class="mm-form">
+        <div class="mm-hint" style="margin:0 0 10px;">การเชื่อมต่อกับ Google Sheets ยังไม่พร้อมใช้งานในไฟล์นี้ เพราะต้องมีการตั้งค่า OAuth/Service Account และโค้ดฝั่งเซิร์ฟเวอร์เพิ่มเติม — เมื่อพร้อมพัฒนาส่วนนี้แจ้งได้เลย จะช่วยวางแผนสถาปัตยกรรมให้</div>
+        <button class="mm-add-btn secondary" disabled style="opacity:.5;cursor:not-allowed;">🔗 เชื่อมต่อ Google Sheets (เร็วๆ นี้)</button>
+      </div>
+    `;
+  }
+
+  // --- STAFF MANAGEMENT (ลงเวลา / สิทธิ์ตามตำแหน่ง / เงินเดือนโดยประมาณ) ---
+  function addStaff(name, role, wage){
+    name = (name||'').trim();
+    if(!name) return toast('กรุณากรอกชื่อพนักงาน');
+    state.staff.push({id:uid(), name, role: role||ROLES[0], hourlyWage: Number(wage)||0});
+    saveData('staff', state.staff); render(); toast('เพิ่มพนักงานแล้ว');
+  }
+  function deleteStaff(id){ state.staff = state.staff.filter(s=>s.id!==id); saveData('staff', state.staff); render(); }
+
+  function openTimeEntry(name){
+    return state.timeLogs.find(t=>t.name===name && !t.clockOut);
+  }
+  function clockIn(){
+    if(!state.currentUser) return;
+    if(openTimeEntry(state.currentUser.name)) return toast('คุณลงเวลาเข้างานไว้แล้ว');
+    state.timeLogs.push({id:uid(), name:state.currentUser.name, role:state.currentUser.role, clockIn:new Date().toISOString(), clockOut:null, hours:null});
+    saveData('timeLogs', state.timeLogs); render(); toast('ลงเวลาเข้างานแล้ว');
+  }
+  function clockOut(){
+    if(!state.currentUser) return;
+    const entry = openTimeEntry(state.currentUser.name);
+    if(!entry) return toast('ยังไม่ได้ลงเวลาเข้างาน');
+    entry.clockOut = new Date().toISOString();
+    entry.hours = (new Date(entry.clockOut) - new Date(entry.clockIn)) / 3600000;
+    saveData('timeLogs', state.timeLogs); render(); toast('ลงเวลาออกงานแล้ว ('+entry.hours.toFixed(2)+' ชม.)');
+  }
+  function computeMonthlyHours(name, now){
+    now = now || new Date();
+    return state.timeLogs.filter(t=>t.name===name && t.hours!=null && new Date(t.clockIn).getFullYear()===now.getFullYear() && new Date(t.clockIn).getMonth()===now.getMonth())
+      .reduce((s,t)=>s+t.hours, 0);
+  }
+
+  function renderStaff(){
+    const showFin = canSeeFinancials();
+    const managerView = isManager();
+    const myOpenEntry = state.currentUser ? openTimeEntry(state.currentUser.name) : null;
+
+    const clockCard = `
+      <div class="mm-form">
+        <div class="mm-li-main" style="margin-bottom:8px;">${myOpenEntry ? '🟢 กำลังทำงานอยู่ (เข้างานเมื่อ '+new Date(myOpenEntry.clockIn).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+')' : '⚪ ยังไม่ได้ลงเวลาเข้างาน'}</div>
+        <button class="mm-add-btn" id="mm-clockin-btn" ${myOpenEntry?'disabled style="opacity:.5;cursor:not-allowed;"':''}>เข้างาน</button>
+        <button class="mm-add-btn secondary" id="mm-clockout-btn" ${!myOpenEntry?'disabled style="opacity:.5;cursor:not-allowed;"':''}>ออกงาน</button>
+      </div>`;
+
+    const roleOpts = ROLES.map(r=>`<option value="${r}">${r}</option>`).join('');
+    const staffList = state.staff.map(s=>{
+      const monthlyHours = computeMonthlyHours(s.name);
+      const pay = monthlyHours * (s.hourlyWage||0);
+      return `
+      <div class="mm-list-item">
+        <div>
+          <div class="mm-li-main">${escapeHtml(s.name)}</div>
+          <div class="mm-li-sub">${escapeHtml(s.role)}${showFin && s.hourlyWage ? ' · ฿'+baht(s.hourlyWage)+'/ชม.' : ''}</div>
+          ${showFin ? '<div class="mm-li-sub">เดือนนี้: '+monthlyHours.toFixed(1)+' ชม. · ประมาณการค่าแรง ฿'+baht(pay)+'</div>' : ''}
+        </div>
+        <button class="mm-del" data-del-staff="${s.id}">✕</button>
+      </div>`;
+    }).join('') || '<div class="mm-empty">ยังไม่มีรายชื่อพนักงาน</div>';
+
+    const logRows = state.timeLogs.slice().reverse().slice(0,30).map(t=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(t.name)}</div><div class="mm-li-sub">${escapeHtml(t.role)}</div></div>
+        <div style="text-align:right;">
+          <div class="mm-li-sub">${new Date(t.clockIn).toLocaleString('th-TH')} ${t.clockOut?'→ '+new Date(t.clockOut).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'(ยังไม่ออกงาน)'}</div>
+          ${t.hours!=null?'<div class="mm-li-sub">'+t.hours.toFixed(2)+' ชม.</div>':''}
+        </div>
+      </div>`).join('') || '<div class="mm-empty">ยังไม่มีประวัติลงเวลา</div>';
+
+    const accessRows = state.accessLog.slice().reverse().slice(0,20).map(l=>`
+      <div class="mm-list-item">
+        <div><div class="mm-li-main">${escapeHtml(l.name)} <span class="mm-badge ${l.action==='login'?'ok':'low'}">${l.action==='login'?'เข้าสู่ระบบ':'ออกจากระบบ'}</span></div><div class="mm-li-sub">${escapeHtml(l.role)}</div></div>
+        <div class="mm-li-sub">${new Date(l.time).toLocaleString('th-TH')}</div>
+      </div>`).join('') || '<div class="mm-empty">ยังไม่มีประวัติการเข้าใช้งาน</div>';
+
+    return `
+      <div class="mm-section-title">ลงเวลาทำงานของฉัน</div>
+      ${clockCard}
+
+      ${managerView ? `
+      <div class="mm-section-title">รายชื่อพนักงาน & สิทธิ์ตามตำแหน่ง</div>
+      ${staffList}
+      <div class="mm-form">
+        <div class="mm-form-row">
+          <div class="mm-field"><label>ชื่อพนักงาน</label><input id="stf-name" placeholder="ชื่อจริง"/></div>
+          <div class="mm-field"><label>ตำแหน่ง</label><select id="stf-role">${roleOpts}</select></div>
+          <div class="mm-field"><label>ค่าแรง (฿/ชม.)</label><input id="stf-wage" type="number" placeholder="0"/></div>
+        </div>
+        <button class="mm-add-btn" id="mm-add-staff-btn">+ เพิ่มพนักงาน</button>
+      </div>
+      <div class="mm-hint">"เจ้าของร้าน"และ"ผู้จัดการ" เข้าแท็บ "ตั้งค่าระบบ" และหน้านี้ได้เต็มสิทธิ์ · ค่าแรง/ประมาณการเงินเดือนจะแสดงเฉพาะเมื่อปลดล็อกข้อมูลการเงินแล้ว (เจ้าของร้าน หรือใส่ PIN)</div>
+
+      <div class="mm-section-title">ประวัติลงเวลาเข้า-ออกงาน</div>
+      ${logRows}
+
+      <div class="mm-section-title">ประวัติการเข้าใช้งานระบบ (Access Log)</div>
+      <div class="mm-hint">บันทึกอัตโนมัติทุกครั้งที่มีคนเข้า/ออกจากระบบ เพื่อตรวจสอบย้อนหลังได้ว่าใครเข้ามาจัดการข้อมูลช่วงไหนบ้าง</div>
+      ${accessRows}
+      ` : `<div class="mm-hint" style="margin-top:16px;">🔒 รายชื่อพนักงาน ประวัติลงเวลาของทุกคน และประวัติการเข้าใช้งาน แสดงเฉพาะเจ้าของร้าน/ผู้จัดการเท่านั้น</div>`}
+    `;
+  }
+
+  // --- RENDER & EVENTS ---
+  function render(){
+    const drawerNavEl = document.getElementById('mm-drawer-nav');
+    const hamburgerBtn = document.getElementById('mm-hamburger-btn');
+    const bodyEl = document.getElementById('mm-body');
+    const userBadge = document.getElementById('mm-user-badge');
+    if(!state.loaded) return;
+
+    if(!state.currentUser){
+      if(drawerNavEl) drawerNavEl.innerHTML = '';
+      if(hamburgerBtn) hamburgerBtn.style.display = 'none';
+      closeDrawer();
+      if(userBadge) userBadge.innerHTML = '';
+      bodyEl.innerHTML = renderLogin();
+      bindEvents();
+      return;
+    }
+    if(hamburgerBtn) hamburgerBtn.style.display = '';
+    if(userBadge) userBadge.innerHTML = `<div style="text-align:right;"><div style="font-size:13px;font-weight:600;">👤 ${escapeHtml(state.currentUser.name)}</div><div style="font-size:11px;color:var(--cream-dim);">${escapeHtml(state.currentUser.role)}</div></div><button id="mm-logout-btn" class="mm-add-btn secondary" style="width:auto;padding:5px 10px;font-size:12px;margin-top:4px;">ออกจากระบบ</button>`;
+
+    if(drawerNavEl) drawerNavEl.innerHTML = TABS.map(t=>`<button class="mm-drawer-item ${state.tab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('');
+
+    if(state.tab==='dash') bodyEl.innerHTML = renderDash();
+    else if(state.tab==='reports') bodyEl.innerHTML = renderReports();
+    else if(state.tab==='stock') bodyEl.innerHTML = renderStock();
+    else if(state.tab==='menu') bodyEl.innerHTML = renderMenu();
+    else if(state.tab==='costs') bodyEl.innerHTML = renderCosts();
+    else if(state.tab==='crm') bodyEl.innerHTML = renderCrm();
+    else if(state.tab==='staff') bodyEl.innerHTML = renderStaff();
+    else if(state.tab==='settings') bodyEl.innerHTML = renderSettings();
+    else bodyEl.innerHTML = `<div class="mm-empty">อยู่ระหว่างการพัฒนาโครงสร้างหมวดหมู่ใหม่</div>`;
+    
+    bindEvents();
+  }
+
+  function bindEvents(){
+    document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>setTab(el.dataset.tab)));
+
+    const hamburgerBtn = document.getElementById('mm-hamburger-btn');
+    if(hamburgerBtn && !hamburgerBtn.dataset.bound){
+      hamburgerBtn.dataset.bound = '1';
+      hamburgerBtn.addEventListener('click', toggleDrawer);
+    }
+    const drawerCloseBtn = document.getElementById('mm-drawer-close-btn');
+    if(drawerCloseBtn && !drawerCloseBtn.dataset.bound){
+      drawerCloseBtn.dataset.bound = '1';
+      drawerCloseBtn.addEventListener('click', closeDrawer);
+    }
+    const scrim = document.getElementById('mm-scrim');
+    if(scrim && !scrim.dataset.bound){
+      scrim.dataset.bound = '1';
+      scrim.addEventListener('click', closeDrawer);
+    }
+
+    // Login / logout
+    document.querySelectorAll('[data-login-as]').forEach(el=>el.addEventListener('click',()=>{
+      const [name,role] = el.dataset.loginAs.split('|'); loginAs(name, role);
+    }));
+    const loginNameInput = document.getElementById('login-name');
+    if(loginNameInput) loginNameInput.addEventListener('input', ()=>{ state.loginInput = loginNameInput.value; });
+    const loginBtn = document.getElementById('mm-login-btn');
+    if(loginBtn) loginBtn.addEventListener('click', ()=>loginAs(document.getElementById('login-name').value, document.getElementById('login-role').value));
+    const logoutBtn = document.getElementById('mm-logout-btn');
+    if(logoutBtn) logoutBtn.addEventListener('click', logout);
+    document.querySelectorAll('[data-del-staff]').forEach(el=>el.addEventListener('click',()=>deleteStaff(el.dataset.delStaff)));
+    const addStaffBtn = document.getElementById('mm-add-staff-btn');
+    if(addStaffBtn) addStaffBtn.addEventListener('click', ()=>addStaff(document.getElementById('stf-name').value, document.getElementById('stf-role').value, document.getElementById('stf-wage').value));
+    const clockInBtn = document.getElementById('mm-clockin-btn');
+    if(clockInBtn) clockInBtn.addEventListener('click', clockIn);
+    const clockOutBtn = document.getElementById('mm-clockout-btn');
+    if(clockOutBtn) clockOutBtn.addEventListener('click', clockOut);
+    
+    // Inbound & Stock
+    const addStockBtn = document.getElementById('mm-add-stock-btn');
+    if(addStockBtn) addStockBtn.addEventListener('click', ()=>addStock(document.getElementById('st-name').value, document.getElementById('st-unit').value, document.getElementById('st-qty').value, document.getElementById('st-low').value, document.getElementById('st-cost').value));
+    
+    const inboundBtn = document.getElementById('mm-inbound-btn');
+    if(inboundBtn) inboundBtn.addEventListener('click', ()=>inboundStock(document.getElementById('in-stock').value, document.getElementById('in-qty').value, document.getElementById('in-cost').value));
+    
+    document.querySelectorAll('[data-del-stock]').forEach(el=>el.addEventListener('click',()=>deleteStock(el.dataset.delStock)));
+
+    // CRM
+    document.querySelectorAll('[data-del-cust]').forEach(el=>el.addEventListener('click',()=>deleteCustomer(el.dataset.delCust)));
+    document.querySelectorAll('[data-edit-cust]').forEach(el=>el.addEventListener('click',()=>startEditCustomer(el.dataset.editCust)));
+    const cancelEditCustBtn = document.getElementById('mm-cancel-edit-cust-btn');
+    if(cancelEditCustBtn) cancelEditCustBtn.addEventListener('click', cancelEditCustomer);
+    const submitCustBtn = document.getElementById('mm-submit-cust-btn');
+    if(submitCustBtn) submitCustBtn.addEventListener('click', ()=>submitCustomer(
+      document.getElementById('cust-phone').value, document.getElementById('cust-name').value,
+      document.getElementById('cust-tags').value, document.getElementById('cust-notes').value));
+
+    // Costs / Financial
+    document.querySelectorAll('[data-del-cost]').forEach(el=>el.addEventListener('click',()=>deleteCost(el.dataset.delCost)));
+    const addCostBtn = document.getElementById('mm-add-cost-btn');
+    if(addCostBtn) addCostBtn.addEventListener('click', ()=>addCost(
+      document.getElementById('cf-name').value, document.getElementById('cf-cat').value,
+      document.getElementById('cf-amount').value, document.getElementById('cf-freq').value));
+
+    // Menu / Recipe
+    function captureMenuDraft(){
+      const nameEl=document.getElementById('mf-name'), priceEl=document.getElementById('mf-price'), portionEl=document.getElementById('mf-portion'), methodEl=document.getElementById('mf-method');
+      if(nameEl) state.menuFormDraft = {
+        name: nameEl.value, price: priceEl?priceEl.value:'', portion: portionEl?portionEl.value:'', method: methodEl?methodEl.value:''
+      };
+    }
+    document.querySelectorAll('[data-rm-recipe-line]').forEach(el=>el.addEventListener('click',()=>{ captureMenuDraft(); removeRecipeLine(Number(el.dataset.rmRecipeLine)); }));
+    const addRecipeLineBtn = document.getElementById('mm-add-recipeline-btn');
+    if(addRecipeLineBtn) addRecipeLineBtn.addEventListener('click', ()=>{
+      captureMenuDraft();
+      addRecipeLine(document.getElementById('rl-stock').value, document.getElementById('rl-qty').value);
+    });
+    document.querySelectorAll('[data-edit-menu]').forEach(el=>el.addEventListener('click',()=>startEditMenu(el.dataset.editMenu)));
+    const cancelEditBtn = document.getElementById('mm-cancel-edit-menu-btn');
+    if(cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEditMenu);
+    const submitMenuBtn = document.getElementById('mm-submit-menu-btn');
+    if(submitMenuBtn) submitMenuBtn.addEventListener('click', ()=>submitMenu(
+      document.getElementById('mf-name').value, document.getElementById('mf-price').value,
+      document.getElementById('mf-portion').value, document.getElementById('mf-method').value));
+    document.querySelectorAll('[data-del-menu]').forEach(el=>el.addEventListener('click',()=>deleteMenu(el.dataset.delMenu)));
+
+    // Dash (PIN)
+    const pinSubmit = document.getElementById('mm-pin-submit');
+    if(pinSubmit) pinSubmit.addEventListener('click', ()=>{
+      if(document.getElementById('mm-pin-input').value === state.settings.ownerPin){ state.unlocked=true; render(); }
+      else toast('รหัส PIN ไม่ถูกต้อง');
+    });
+    const relockBtn = document.getElementById('mm-relock-btn');
+    if(relockBtn) relockBtn.addEventListener('click', ()=>{ state.unlocked=false; render(); });
+    const refreshNowBtn = document.getElementById('mm-refresh-now-btn');
+    if(refreshNowBtn) refreshNowBtn.addEventListener('click', manualRefresh);
+    const exportReportsBtn = document.getElementById('mm-export-reports-btn');
+    if(exportReportsBtn) exportReportsBtn.addEventListener('click', exportReportsCsv);
+
+    // Settings
+    const savePinBtn = document.getElementById('mm-save-pin-btn');
+    if(savePinBtn) savePinBtn.addEventListener('click', ()=>{
+      state.settings.ownerPin = document.getElementById('set-pin').value.trim();
+      saveData('settings', state.settings);
+      state.unlocked = false; toast('บันทึก PIN แล้ว'); render();
+    });
+    const connectFbBtn = document.getElementById('mm-connect-firebase-btn');
+    if(connectFbBtn) connectFbBtn.addEventListener('click', ()=>{
+      const cfg = {
+        apiKey: document.getElementById('fb-apikey').value.trim(),
+        authDomain: document.getElementById('fb-authdomain').value.trim(),
+        databaseURL: document.getElementById('fb-dburl').value.trim(),
+        projectId: document.getElementById('fb-projectid').value.trim(),
+        storageBucket: document.getElementById('fb-bucket').value.trim(),
+        messagingSenderId: document.getElementById('fb-sender').value.trim(),
+        appId: document.getElementById('fb-appid').value.trim(),
+      };
+      if(!cfg.apiKey || !cfg.databaseURL || !cfg.projectId){ toast('กรุณากรอกอย่างน้อย apiKey, databaseURL, projectId'); return; }
+      state.firebaseConfig = cfg;
+      saveFirebaseConfig(cfg);
+      connectFirebase(cfg);
+      toast('กำลังเชื่อมต่อ Firebase...');
+    });
+    const disconnectFbBtn = document.getElementById('mm-disconnect-firebase-btn');
+    if(disconnectFbBtn) disconnectFbBtn.addEventListener('click', disconnectFirebase);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
